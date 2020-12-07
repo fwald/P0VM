@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-
+#include <string.h>
 
 Instruction g_test_program[100];
 int g_test_program_len = 0;
@@ -11,11 +11,13 @@ int g_test_program_len = 0;
 void generate_test_program_1(); 
 void generate_test_program_2(); 
 
+void write_program_to_file();
+void read_program_from_file();
+
 
 int main(int argv, char argc[]) {
    
     printf("Initializing Punkt0 VM ...\n");
-
    
     Register registers[NUM_REGISTERS]; // General purpose registers
     clear_registers(registers);
@@ -46,12 +48,17 @@ int main(int argv, char argc[]) {
     printf("    ...Done!\n");
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
+    
+    read_program_from_file();
+//    generate_test_program_1();
+ //   write_program_to_file();
+    uint32_t i = 0;
 
-    generate_test_program_2();
-    for (uint32_t i = 0; i < g_test_program_len; i++) {
+    while ( i < g_test_program_len) {
         Instruction in = g_test_program[i];
-        
         Byte opcode = in.bytes[5];
+        i++; 
+
         switch (opcode)
         {
         case I_NOOP:  {
@@ -130,7 +137,8 @@ int main(int argv, char argc[]) {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
             int val = get_register(registers, jmp->reg);
             if (val == 0) {
-                i = jmp->instruction_nr-1; // Take account for the fact that i will be incremented before the next iteration
+                i = jmp->instruction_nr; 
+
             }
             printf("JMPEQ instruction\n");
         } break; 
@@ -138,7 +146,7 @@ int main(int argv, char argc[]) {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
             int val = get_register(registers, jmp->reg);
             if (val != 0) {
-                i = jmp->instruction_nr-1; // Take account for the fact that i will be incremented before the next iteration
+                i = jmp->instruction_nr; 
             }
             printf("JMPNEQ instruction\n");
         } break;
@@ -262,4 +270,44 @@ void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset)
     printf("Value at memory offset %u is %d\n", offset, (*mem)); 
 }
 
+
+void write_program_to_file() {
+    FILE* file =  fopen("program.pvm", "wb");
+    if (!file) {
+        printf("Could not open file for writing!\n");
+        return; 
+    }
+
+    fwrite(g_test_program, sizeof(Instruction), g_test_program_len, file);
+    
+    //for (int i = 0; i < g_test_program_len; i++) {
+    //    Byte* pb = (Byte*) &g_test_program[i]; 
+    //    for (int j = INSTRUCTION_SIZE_BYTES - 1; j >= 0; j--) {
+    //        int byte_val = (int) pb[j];
+    //        fprintf(file, "%X ",byte_val );
+    //    }
+    //    fprintf(file, "end of instruction\n");
+    //}
+
+    fclose(file);
+}
+
+void read_program_from_file() {
+    FILE* file = fopen("program.pvm", "rb");
+    if (!file) {
+        printf("Could not open file for reading!\n");
+        return;
+    }
+    
+    size_t filesize = 0;
+    fseek(file, 0L, SEEK_END);
+    filesize = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+    
+    g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
+
+    fread(g_test_program, sizeof(Instruction), g_test_program_len, file);
+
+    fclose(file);
+}
 

@@ -10,6 +10,10 @@ enum bool_values {
     BOOL_TRUE = 1, 
 };
 
+enum instruction_constants {
+    INSTRUCTION_SIZE_BYTES = 6,
+};
+    
 
 enum instruction_opcodes {
     I_NOOP = 0,
@@ -42,7 +46,7 @@ enum instruction_opcodes {
 */
 
 typedef struct instruction_t {
-    Byte bytes[6];
+    Byte bytes[INSTRUCTION_SIZE_BYTES];
 } Instruction ;
 
 typedef union load_instruction_t {
