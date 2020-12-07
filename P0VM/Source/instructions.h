@@ -5,11 +5,16 @@
 
 #include "vm_types.h"
 
+enum bool_values {
+    BOOL_FALSE = 0,
+    BOOL_TRUE = 1, 
+};
+
+
 enum instruction_opcodes {
     I_NOOP = 0,
     I_STORE, // Mem[] <- Register
     I_STORE_AT, // Store from register to the specified address 
-    I_STORE_CONST,
     I_LOAD, // Register <- Mem[]
     I_LOAD_CONST,
     I_PUSH,
@@ -18,6 +23,14 @@ enum instruction_opcodes {
     I_SUB,
     I_DIV,
     I_MUL,
+    I_INCR,
+    I_DECR,
+    I_CMP_EQ,
+    I_CMP_LESS,
+    I_IF,
+    I_IFELSE,
+    I_JMPEQ, // Jumpt if value in register is == 0 
+    I_JMPNEQ, // Jumpt if value in register is != 0 
     I_CALL,
     I_PRINTLN,
 };
@@ -50,7 +63,6 @@ typedef union load_const_instruction_t {
     };
 }I_LoadConst;
 
-
 typedef union store_instruction_t {
     Instruction _instruction;
     struct {
@@ -71,7 +83,28 @@ typedef union binop_instruction_t {
         Byte reg_op_x;
         Byte opcode;
     };
-}I_Add, I_Sub, I_Mul, I_Div ;
+}I_Binop, I_Add, I_Sub, I_Mul, I_Div, I_CompareEquals, I_CompareLess; 
+
+typedef union single_reg_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte _pad3;
+        Byte reg; // The register whose value will be incremented or decremented
+        Byte opcode;
+    };
+}I_Increment, I_Decrement; 
+
+typedef union jump_instruction_t {
+    Instruction _instruction;
+    struct {
+        MemOffset instruction_nr; // Jumpt to this instruction number. Note that since this is a uint32 we have a max size of the jump that can be made
+        Byte reg; 
+        Byte opcode;
+    };
+} I_JumpEquals, I_JumpNeq;
 
 
 #endif // !P0VM_INSTRUCTIONS_H

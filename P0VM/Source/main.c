@@ -8,7 +8,8 @@
 Instruction g_test_program[100];
 int g_test_program_len = 0;
 
-void generate_test_program(); 
+void generate_test_program_1(); 
+void generate_test_program_2(); 
 
 
 int main(int argv, char argc[]) {
@@ -46,8 +47,8 @@ int main(int argv, char argc[]) {
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
 
-    generate_test_program();
-    for (int i = 0; i < g_test_program_len; i++) {
+    generate_test_program_2();
+    for (uint32_t i = 0; i < g_test_program_len; i++) {
         Instruction in = g_test_program[i];
         
         Byte opcode = in.bytes[5];
@@ -64,9 +65,6 @@ int main(int argv, char argc[]) {
             I_StoreAt* store = (I_StoreAt*)&in; 
             int val = get_register(registers, store->reg);
             set_memory(pmemory, memory_size, store->dest_address, val);
-        } break;
-        case I_STORE_CONST: {
-            printf("STORE_CONST instruction\n");
         } break;
         case I_LOAD: {
             printf("LOAD instruction\n");
@@ -104,6 +102,47 @@ int main(int argv, char argc[]) {
             set_register(registers, mul->dest_reg, x * y );
             printf("MUL instruction\n");
         } break;
+        case I_INCR: {
+            I_Increment* incr  = (I_Increment*)& in;
+            add_to_register(registers, incr->reg, 1);
+            printf("INCR  instruction!\n");
+        } break;
+        case I_DECR: {
+            I_Decrement* incr  = (I_Decrement*)& in;
+            add_to_register(registers, incr->reg, -1);
+            printf("DECR instruction!\n");
+        } break;
+        case I_CMP_EQ: {
+            I_CompareEquals* eq = (I_CompareEquals*)&in;
+            int x = get_register(registers, eq->reg_op_x);
+            int y = get_register(registers, eq->reg_op_y);
+            set_register(registers, eq->dest_reg, (x == y) ? BOOL_TRUE: BOOL_FALSE );
+            printf("CompareEquals instruction\n");
+        } break;
+        case I_CMP_LESS: {
+            I_CompareLess* eq = (I_CompareLess*)&in;
+            int x = get_register(registers, eq->reg_op_x);
+            int y = get_register(registers, eq->reg_op_y);
+            set_register(registers, eq->dest_reg, (x < y) ? BOOL_TRUE: BOOL_FALSE );
+            printf("CompareLess instruction\n");
+        } break;
+        case I_JMPEQ: {
+            I_JumpEquals* jmp = (I_JumpEquals*)&in;
+            int val = get_register(registers, jmp->reg);
+            if (val == 0) {
+                i = jmp->instruction_nr-1; // Take account for the fact that i will be incremented before the next iteration
+            }
+            printf("JMPEQ instruction\n");
+        } break; 
+        case I_JMPNEQ: {
+            I_JumpNeq* jmp = (I_JumpNeq*)&in;
+            int val = get_register(registers, jmp->reg);
+            if (val != 0) {
+                i = jmp->instruction_nr-1; // Take account for the fact that i will be incremented before the next iteration
+            }
+            printf("JMPNEQ instruction\n");
+        } break;
+
         case I_CALL: {
             printf("CALL instruction\n");
         } break;
@@ -127,12 +166,11 @@ int main(int argv, char argc[]) {
 
 
 
-void generate_test_program() {
+void generate_test_program_1() {
     I_LoadConst load1 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 666 };
     I_LoadConst load2 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 111 };
     I_Add add1 = { .opcode = I_ADD, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RC };
     I_StoreAt store1 = { .opcode = I_STORE_AT, .reg = RC, .dest_address = 0 };
-  
 
     I_LoadConst load3 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 2 };
     I_LoadConst load4 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 5 };
@@ -140,20 +178,42 @@ void generate_test_program() {
     I_Mul mul1 = { .opcode = I_MUL, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RF };
     I_Div div1 = { .opcode = I_DIV, .reg_op_x = RF, .reg_op_y = RA, .dest_reg = RG };
 
+    I_CompareEquals cmpeq1 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RD };
+    I_CompareEquals cmpeq2 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RA, .dest_reg = RH };
 
+    I_Increment incr1 = { .opcode = I_INCR, .reg = RH };
+    I_Decrement decr1 = { .opcode = I_DECR, .reg = RB };
 
     g_test_program[g_test_program_len++] = load1._instruction;
     g_test_program[g_test_program_len++] = load2._instruction;
     g_test_program[g_test_program_len++] = add1._instruction;
     g_test_program[g_test_program_len++] = store1._instruction;
-    
+
     g_test_program[g_test_program_len++] = load3._instruction;
     g_test_program[g_test_program_len++] = load4._instruction;
     g_test_program[g_test_program_len++] = sub1._instruction;
     g_test_program[g_test_program_len++] = mul1._instruction;
     g_test_program[g_test_program_len++] = div1._instruction;
-    
 
+    g_test_program[g_test_program_len++] = cmpeq1._instruction;
+    g_test_program[g_test_program_len++] = cmpeq2._instruction;
+
+    g_test_program[g_test_program_len++] = incr1._instruction;
+    g_test_program[g_test_program_len++] = decr1._instruction;
+}
+
+void generate_test_program_2() {
+    I_LoadConst instr_0 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 10 };
+    I_Increment instr_1 = { .opcode = I_INCR, .reg = RB };
+    I_Decrement instr_2 = { .opcode = I_DECR, .reg = RA };
+
+    I_JumpEquals instr_3 = { .opcode = I_JMPNEQ, .reg = RA, .instruction_nr = 1 };
+
+    
+    g_test_program[g_test_program_len++] = instr_0._instruction;
+    g_test_program[g_test_program_len++] = instr_1._instruction;
+    g_test_program[g_test_program_len++] = instr_2._instruction;
+    g_test_program[g_test_program_len++] = instr_3._instruction;
 }
 
 
@@ -168,6 +228,10 @@ void print_register(Register* registers, RegisterName rn) {
    printf("R%c: [%d]\n", 'A'+rn, registers[rn].store);
 }
 
+void add_to_register(Register* registers, RegisterName rn, int val) {
+    assert(rn >= 0 && rn < NUM_REGISTERS); 
+    registers[rn].store += val; 
+}
 
 void clear_registers(Register* r )  {
     for (int i = 0; i < NUM_REGISTERS; i++) {

@@ -21,6 +21,7 @@ void set_register(Register* registers, RegisterName r, int val);
 */
 int get_register(Register* registers, RegisterName r); 
 
+void add_to_register(Register* registers, RegisterName r, int val);
 
 /*
 * Set the memory to val at offset bytes from membase 
