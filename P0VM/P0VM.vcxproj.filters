@@ -29,5 +29,8 @@
     <ClInclude Include="Source\vm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\op_codes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

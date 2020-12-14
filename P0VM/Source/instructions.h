@@ -4,6 +4,7 @@
 
 
 #include "vm_types.h"
+#include "op_codes.h"
 
 enum bool_values {
     BOOL_FALSE = 0,
@@ -13,31 +14,40 @@ enum bool_values {
 enum instruction_constants {
     INSTRUCTION_SIZE_BYTES = 6,
 };
-    
+   
 
-enum instruction_opcodes {
-    I_NOOP = 0,
+
+/*
     I_STORE, // Mem[] <- Register
     I_STORE_AT, // Store from register to the specified address 
     I_LOAD, // Register <- Mem[]
-    I_LOAD_CONST,
-    I_PUSH,
-    I_POP,
-    I_ADD,
-    I_SUB,
-    I_DIV,
-    I_MUL,
-    I_INCR,
-    I_DECR,
-    I_CMP_EQ,
-    I_CMP_LESS,
-    I_IF,
-    I_IFELSE,
     I_JMPEQ, // Jumpt if value in register is == 0 
     I_JMPNEQ, // Jumpt if value in register is != 0 
-    I_CALL,
-    I_PRINTLN,
-};
+*/
+
+//enum instruction_opcodes {
+//    I_NOOP = 0,
+//    I_STORE, // Mem[] <- Register
+//    I_STORE_AT, // Store from register to the specified address 
+//    I_LOAD, // Register <- Mem[]
+//    I_LOAD_CONST,
+//    I_PUSH,
+//    I_POP,
+//    I_ADD,
+//    I_SUB,
+//    I_DIV,
+//    I_MUL,
+//    I_INCR,
+//    I_DECR,
+//    I_CMP_EQ,
+//    I_CMP_LESS,
+//    I_IF,
+//    I_IFELSE,
+//    I_JMPEQ, // Jumpt if value in register is == 0 
+//    I_JMPNEQ, // Jumpt if value in register is != 0 
+//    I_CALL,
+//    I_PRINTLN,
+//};
 
 /*
 *   Most significant   --------->     Least significant
