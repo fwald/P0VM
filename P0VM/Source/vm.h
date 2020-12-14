@@ -6,6 +6,13 @@
 #include "instructions.h"
 
 
+
+typedef enum return_codes_t {
+    RETCODE_ERROR,
+    RETCODE_OK,
+} RetCode;
+
+
 void clear_registers(Register* registers);
 void print_registers(Register* registers);
 void print_register(Register* registers, RegisterName rn);

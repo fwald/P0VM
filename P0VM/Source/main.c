@@ -5,14 +5,14 @@
 #include <assert.h>
 #include <string.h>
 
-Instruction g_test_program[100];
+Instruction* g_test_program;
 int g_test_program_len = 0;
 
 void generate_test_program_1(); 
 void generate_test_program_2(); 
 
 void write_program_to_file();
-void read_program_from_file();
+RetCode read_program_from_file(char* filename);
 
 
 int main(int argv, char argc[]) {
@@ -41,15 +41,16 @@ int main(int argv, char argc[]) {
     Instruction* instruction_stream = NULL ; 
     size_t num_instructions = 0;
     int IP = 0 ; // Instruction offset 
-    //read instructions from file
-    //char* filename = ""; 
-    //FILE* instruction_file = fopen(filename, "r");
-    //fclose(instruction_file);
-    printf("    ...Done!\n");
+    if (read_program_from_file("compiled_program.pvm")) {
+        printf("    ...Done!\n");
+    }
+    else {
+        printf("   ...Failed!\n");
+        return -1; 
+    }
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
     
-    read_program_from_file();
 //    generate_test_program_1();
  //   write_program_to_file();
     uint32_t i = 0;
@@ -163,6 +164,8 @@ int main(int argv, char argc[]) {
         }
          
     }
+
+    printf("\n");
     print_registers(registers) ;
     print_int_at_memory_offset(pmemory, memory_size, 0);
 
@@ -292,22 +295,34 @@ void write_program_to_file() {
     fclose(file);
 }
 
-void read_program_from_file() {
-    FILE* file = fopen("program.pvm", "rb");
-    if (!file) {
-        printf("Could not open file for reading!\n");
-        return;
+RetCode read_program_from_file(char* filename ) {
+    FILE* file = fopen(filename , "rb");
+    if (file) {
+        size_t filesize = 0;
+        fseek(file, 0L, SEEK_END);
+        filesize = ftell(file);
+        fseek(file, 0L, SEEK_SET);
+       
+        //TODO: Use internal memory instead of malloc, after we have implemented an allocator
+        g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
+        g_test_program = (Instruction*)malloc(filesize);
+
+        RetCode ret = RETCODE_ERROR;
+
+        if (g_test_program) {
+            fread(g_test_program, sizeof(Instruction), g_test_program_len, file);
+            ret = RETCODE_OK;
+        }
+        else {
+            printf("Failed to alloacte memory for instructions!\n");
+        }
+
+        fclose(file);
+        return ret; 
     }
-    
-    size_t filesize = 0;
-    fseek(file, 0L, SEEK_END);
-    filesize = ftell(file);
-    fseek(file, 0L, SEEK_SET);
-    
-    g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
-
-    fread(g_test_program, sizeof(Instruction), g_test_program_len, file);
-
-    fclose(file);
+    else {
+        printf("Could not open file for reading!\n");
+        return RETCODE_ERROR;
+    }
 }
 
