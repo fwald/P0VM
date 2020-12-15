@@ -16,7 +16,6 @@ enum instruction_constants {
 };
    
 
-
 /*
     I_STORE, // Mem[] <- Register
     I_STORE_AT, // Store from register to the specified address 
@@ -24,30 +23,6 @@ enum instruction_constants {
     I_JMPEQ, // Jumpt if value in register is == 0 
     I_JMPNEQ, // Jumpt if value in register is != 0 
 */
-
-//enum instruction_opcodes {
-//    I_NOOP = 0,
-//    I_STORE, // Mem[] <- Register
-//    I_STORE_AT, // Store from register to the specified address 
-//    I_LOAD, // Register <- Mem[]
-//    I_LOAD_CONST,
-//    I_PUSH,
-//    I_POP,
-//    I_ADD,
-//    I_SUB,
-//    I_DIV,
-//    I_MUL,
-//    I_INCR,
-//    I_DECR,
-//    I_CMP_EQ,
-//    I_CMP_LESS,
-//    I_IF,
-//    I_IFELSE,
-//    I_JMPEQ, // Jumpt if value in register is == 0 
-//    I_JMPNEQ, // Jumpt if value in register is != 0 
-//    I_CALL,
-//    I_PRINTLN,
-//};
 
 /*
 *   Most significant   --------->     Least significant
@@ -106,10 +81,10 @@ typedef union single_reg_instruction_t {
         Byte _pad1;
         Byte _pad2;
         Byte _pad3;
-        Byte reg; // The register whose value will be incremented or decremented
+        Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop
         Byte opcode;
     };
-}I_Increment, I_Decrement; 
+}I_Increment, I_Decrement, I_Pop; 
 
 typedef union jump_instruction_t {
     Instruction _instruction;
@@ -119,6 +94,16 @@ typedef union jump_instruction_t {
         Byte opcode;
     };
 } I_JumpEquals, I_JumpNeq;
+
+typedef union push_instruction_t {
+    Instruction _instruction;
+    struct {
+        int32_t value; //Keep 32-bit value in the lower 4 bytes. Makes sure that it is aligned
+        Byte padding_;
+        Byte opcode; 
+    };
+} I_Push;
+
 
 
 #endif // !P0VM_INSTRUCTIONS_H
