@@ -31,6 +31,7 @@ int get_register(Register* registers, RegisterName r);
 void add_to_register(Register* registers, RegisterName r, int val);
 
 void set_flag(Register* registers, RegisterFlagShifts shifts, int flag_value);
+int get_flag(Register* registers, RegisterFlagShifts shifts);
 
 /*
 * Set the memory to val at offset bytes from membase 

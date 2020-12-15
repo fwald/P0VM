@@ -125,9 +125,7 @@ int main(int argv, char argc[]) {
             I_CompareEquals* eq = (I_CompareEquals*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
-           // set_register(registers, eq->dest_reg, (x == y) ? BOOL_TRUE: BOOL_FALSE );
             set_flag(registers, RFLAG_COMPARE, (x == y));
-
             printf("CompareEquals instruction\n");
             print_register_flags(registers);
         } break;
@@ -135,25 +133,21 @@ int main(int argv, char argc[]) {
             I_CompareLess* eq = (I_CompareLess*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
-        //    set_register(registers, eq->dest_reg, (x < y) ? BOOL_TRUE: BOOL_FALSE );
             set_flag(registers, RFLAG_COMPARE, (x < y));
-
-
+            
             printf("CompareLess instruction\n");
             print_register_flags(registers);
         } break;
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
-            int val = get_register(registers, jmp->reg);
-            if (val == 0) {
+            if (get_flag(registers, RFLAG_COMPARE) == 1 ) {
                 i = jmp->instruction_nr; 
             }
             printf("JMPEQ instruction\n");
         } break; 
         case I_JMPNEQ: {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
-            int val = get_register(registers, jmp->reg);
-            if (val != 0) {
+            if (get_flag(registers, RFLAG_COMPARE) == 0) {
                 i = jmp->instruction_nr; 
             }
             printf("JMPNEQ instruction\n");
@@ -198,6 +192,9 @@ void set_flag(Register* registers, RegisterFlagShifts shifts, int flag_value ) {
     registers[RFLAGS].store |= (flag_value << shifts); //Set flag 
 }
 
+int get_flag(Register* registers, RegisterFlagShifts shifts) {
+    return ((registers[RFLAGS].store >> shifts) & 1); 
+}
 
 void push(Stack* stack, int32_t value) {
     increment_stack_pointer(stack, (MemOffset)sizeof(value)); //make space
