@@ -6,7 +6,7 @@
 #include <string.h>
 
 Instruction* g_test_program;
-int g_test_program_len = 0;
+size_t g_test_program_len = 0;
 
 //Util functions
 void generate_test_program_1(); 
@@ -158,6 +158,13 @@ int main(int argv, char argc[]) {
             push(&stack, psh->value);
             printf("PUSH instruction\n");
         } break;
+        case I_POP: {
+            I_Pop* ipop = (I_Pop*)&in;
+            int32_t val = pop(&stack);
+            set_register(registers, ipop->reg, val);
+            printf("POP instruction\n");
+        }
+
         case I_CALL: {
             printf("CALL instruction\n");
         } break;
@@ -188,6 +195,13 @@ void push(Stack* stack, int32_t value) {
     Byte* p = stack->base - stack->top; //Get pointer to top of stack, stack grows downwards, hence the '-' 
     int32_t* pint = (int32_t*)p; 
     (*pint) = value;
+}
+
+int32_t pop(Stack* stack) {
+    Byte* p = (stack->base - stack->top); 
+    int32_t val = (*(int32_t*)(p));
+    decrement_stack_pointer(stack, (MemOffset)sizeof(val) );
+    return val; 
 }
 
 

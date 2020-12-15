@@ -39,6 +39,7 @@ void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset)
 
 // Stack stuff
 void push(Stack* stack, int32_t value);
+int32_t pop(Stack* stack);
 void increment_stack_pointer(Stack* stack, MemOffset increment);
 void decrement_stack_pointer(Stack* stack, MemOffset decrement);
 
