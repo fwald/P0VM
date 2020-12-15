@@ -8,9 +8,9 @@
 Instruction* g_test_program;
 int g_test_program_len = 0;
 
+//Util functions
 void generate_test_program_1(); 
 void generate_test_program_2(); 
-
 void write_program_to_file();
 RetCode read_program_from_file(char* filename);
 
@@ -21,6 +21,9 @@ int main(int argv, char argc[]) {
    
     Register registers[NUM_REGISTERS]; // General purpose registers
     clear_registers(registers);
+
+    
+
 
     printf("Allocating memory... ");
     //Get memory 
@@ -139,7 +142,6 @@ int main(int argv, char argc[]) {
             int val = get_register(registers, jmp->reg);
             if (val == 0) {
                 i = jmp->instruction_nr; 
-
             }
             printf("JMPEQ instruction\n");
         } break; 
@@ -151,7 +153,11 @@ int main(int argv, char argc[]) {
             }
             printf("JMPNEQ instruction\n");
         } break;
-
+        case I_PUSH: {
+            I_Push* psh = (I_Push*)&in;
+            push(&stack, psh->value);
+            printf("PUSH instruction\n");
+        } break;
         case I_CALL: {
             printf("CALL instruction\n");
         } break;
@@ -167,6 +173,7 @@ int main(int argv, char argc[]) {
 
     printf("\n");
     print_registers(registers) ;
+    print_stack(&stack);
     print_int_at_memory_offset(pmemory, memory_size, 0);
 
 
@@ -175,6 +182,40 @@ int main(int argv, char argc[]) {
     return 0; 
 }
 
+
+void push(Stack* stack, int32_t value) {
+    increment_stack_pointer(stack, (MemOffset)sizeof(value)); //make space
+    Byte* p = stack->base - stack->top; //Get pointer to top of stack, stack grows downwards, hence the '-' 
+    int32_t* pint = (int32_t*)p; 
+    (*pint) = value;
+}
+
+
+void increment_stack_pointer(Stack* stack, MemOffset increment ) {
+    int64_t signed_offset = (int64_t)stack->top;
+    if ( (signed_offset + increment) > 0xFFFFFFFFLL) {
+        printf("Error, stack overflow! You have consumed the entire memory of the VM :( \n");
+        assert(0); //For now, just shut down
+    }
+    stack->top += increment;  
+}
+
+void decrement_stack_pointer(Stack* stack, MemOffset decrement) {
+    int64_t signed_offset = (int64_t)stack->top;
+    if ((signed_offset - decrement) <0)  {
+        printf("Stack underflow! Trying to pop more elements of the stack than it contains! Check your code-gen! \n");
+        assert(0); // Crasch 
+    }
+    stack->top -= decrement; 
+}
+
+void print_stack(Stack* stack) {
+    Byte* p = (stack->base - stack->top); 
+    printf("Printing stack\n");
+    for (p; p < stack->base; p += sizeof(int32_t)) {
+        printf("%d\n", (*(int32_t*)(p)));
+    }
+}
 
 
 void generate_test_program_1() {
