@@ -6,12 +6,14 @@
 
 
 typedef int8_t Byte;
-typedef uint32_t MemOffset;
+typedef uint32_t MemOffset; 
 
 
 /*
     Constants
 */
+
+// General purpose registers
 typedef enum vm_registers {
     RA =0,
     RB,
@@ -21,8 +23,17 @@ typedef enum vm_registers {
     RF,
     RG,
     RH,
-    NUM_REGISTERS, // Number of general purpose registers
+    NUM_GENERAL_REGISTERS, // Number of general purpose registers
+    RFLAGS = NUM_GENERAL_REGISTERS, // A special register where status flags are set
+    NUM_REGISTERS,
 } RegisterName ;
+
+typedef enum rflags_shifts {
+    RFLAG_COMPARE , 
+    RFLAG_OVERFLOW,
+    RFLAG_SIGN,
+    RFLAG_NUM_FLAGS,
+} RegisterFlagShifts ;
 
 
 typedef struct register_t  {
@@ -31,7 +42,7 @@ typedef struct register_t  {
 
 typedef struct memory_stack_t {
     Byte* base;
-    MemOffset top; //offset, in bytes, from base to top of stack 
+    MemOffset top; //offset, in bytes, from base to top of stack, i.e. the stack-pointer (SP)
 } Stack ;
 
 typedef struct stack_frame_t {
@@ -42,7 +53,5 @@ typedef struct stack_frame_t {
 typedef struct memory_heap_t {
     Byte* base; 
 } Heap ;
-
-
 
 #endif 

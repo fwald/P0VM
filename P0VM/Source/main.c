@@ -22,8 +22,6 @@ int main(int argv, char argc[]) {
     Register registers[NUM_REGISTERS]; // General purpose registers
     clear_registers(registers);
 
-    
-
 
     printf("Allocating memory... ");
     //Get memory 
@@ -127,15 +125,22 @@ int main(int argv, char argc[]) {
             I_CompareEquals* eq = (I_CompareEquals*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
-            set_register(registers, eq->dest_reg, (x == y) ? BOOL_TRUE: BOOL_FALSE );
+           // set_register(registers, eq->dest_reg, (x == y) ? BOOL_TRUE: BOOL_FALSE );
+            set_flag(registers, RFLAG_COMPARE, (x == y));
+
             printf("CompareEquals instruction\n");
+            print_register_flags(registers);
         } break;
         case I_CMP_LESS: {
             I_CompareLess* eq = (I_CompareLess*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
-            set_register(registers, eq->dest_reg, (x < y) ? BOOL_TRUE: BOOL_FALSE );
+        //    set_register(registers, eq->dest_reg, (x < y) ? BOOL_TRUE: BOOL_FALSE );
+            set_flag(registers, RFLAG_COMPARE, (x < y));
+
+
             printf("CompareLess instruction\n");
+            print_register_flags(registers);
         } break;
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
@@ -164,7 +169,6 @@ int main(int argv, char argc[]) {
             set_register(registers, ipop->reg, val);
             printf("POP instruction\n");
         }
-
         case I_CALL: {
             printf("CALL instruction\n");
         } break;
@@ -187,6 +191,11 @@ int main(int argv, char argc[]) {
     free(pmemory);
     printf("\nTerminating, good bye!\n");
     return 0; 
+}
+
+void set_flag(Register* registers, RegisterFlagShifts shifts, int flag_value ) {
+    registers[RFLAGS].store &= ~(1 << shifts); //Clear flag 
+    registers[RFLAGS].store |= (flag_value << shifts); //Set flag 
 }
 
 
@@ -217,7 +226,7 @@ void increment_stack_pointer(Stack* stack, MemOffset increment ) {
 void decrement_stack_pointer(Stack* stack, MemOffset decrement) {
     int64_t signed_offset = (int64_t)stack->top;
     if ((signed_offset - decrement) <0)  {
-        printf("Stack underflow! Trying to pop more elements of the stack than it contains! Check your code-gen! \n");
+        printf("[FATAL-ERROR]: Stack underflow! Trying to pop more elements of the stack than it contains! Check your code-gen! \n");
         assert(0); // Crasch 
     }
     stack->top -= decrement; 
@@ -284,10 +293,23 @@ void generate_test_program_2() {
 
 
 void print_registers(Register* r) {
-    for (int i = 0; i < NUM_REGISTERS; i++) {
+    for (int i = 0; i < NUM_GENERAL_REGISTERS; i++) {
         printf("R%c: [%d]\n", 'A'+i, r[i].store);
     }
+
+    print_register_flags(r);
+
 }
+
+void print_register_flags(Register* registers) {
+    printf("RFLAGS: ");
+    for (int i = RFLAG_NUM_FLAGS-1; i >= 0; i--) {
+        printf("%d ", (registers[RFLAGS].store >> i) & 1);
+       
+    }
+    printf("\n");
+}
+
 
 void print_register(Register* registers, RegisterName rn) {
    assert(rn < NUM_REGISTERS); 
@@ -295,7 +317,7 @@ void print_register(Register* registers, RegisterName rn) {
 }
 
 void add_to_register(Register* registers, RegisterName rn, int val) {
-    assert(rn >= 0 && rn < NUM_REGISTERS); 
+    assert(rn >= 0 && rn < NUM_GENERAL_REGISTERS); 
     registers[rn].store += val; 
 }
 
@@ -307,12 +329,12 @@ void clear_registers(Register* r )  {
 
 
 void set_register(Register* registers, RegisterName r, int val) {
-    assert(r >= 0 && r < NUM_REGISTERS);
+    assert(r >= 0 && r < NUM_GENERAL_REGISTERS);
     registers[r].store = val; 
 }
 
 int get_register(Register* registers, RegisterName r) {
-    assert(r >= 0 && r < NUM_REGISTERS);
+    assert(r >= 0 && r < NUM_GENERAL_REGISTERS);
     return registers[r].store; 
 }
 
@@ -337,16 +359,6 @@ void write_program_to_file() {
     }
 
     fwrite(g_test_program, sizeof(Instruction), g_test_program_len, file);
-    
-    //for (int i = 0; i < g_test_program_len; i++) {
-    //    Byte* pb = (Byte*) &g_test_program[i]; 
-    //    for (int j = INSTRUCTION_SIZE_BYTES - 1; j >= 0; j--) {
-    //        int byte_val = (int) pb[j];
-    //        fprintf(file, "%X ",byte_val );
-    //    }
-    //    fprintf(file, "end of instruction\n");
-    //}
-
     fclose(file);
 }
 
