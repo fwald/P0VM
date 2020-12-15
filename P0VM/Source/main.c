@@ -14,6 +14,10 @@ void generate_test_program_2();
 void write_program_to_file();
 RetCode read_program_from_file(char* filename);
 
+char register_letter(RegisterName rn) {
+    return 'A' + rn;
+}
+
 
 int main(int argv, char argc[]) {
    
@@ -96,7 +100,7 @@ int main(int argv, char argc[]) {
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
 
-            printf("LOAD_STACK_OFFSET instruction\n");
+            printf("LOAD_STACK_OFFSET. R%c <- val:(%d)\n", register_letter(load->reg), value );
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
@@ -131,6 +135,20 @@ int main(int argv, char argc[]) {
             set_register(registers, mul->dest_reg, x * y );
             printf("MUL instruction\n");
         } break;
+        case I_AND: {
+            I_And* and = (I_And*)&in;
+            int x = get_register(registers, and->reg_op_x);
+            int y = get_register(registers, and->reg_op_y);
+            set_register(registers, and->dest_reg, x && y );
+            printf("AND: %d && %d == %d\n",x,y,x&&y);
+        } break;
+        case I_OR: {
+            I_Or* or = (I_Or*)&in;
+            int x = get_register(registers, or->reg_op_x);
+            int y = get_register(registers, or->reg_op_y);
+            set_register(registers, or->dest_reg, x || y );
+            printf("OR: %d || %d == %d \n",x,y,x||y);
+        } break;
         case I_INCR: {
             I_Increment* incr  = (I_Increment*)& in;
             add_to_register(registers, incr->reg, 1);
@@ -158,6 +176,12 @@ int main(int argv, char argc[]) {
             printf("CompareLess instruction\n");
             print_register_flags(registers);
         } break;
+        case I_JMP: {
+            I_Jump* jmp = (I_Jump*)&in;
+            i = jmp->instruction_nr; 
+            printf("JMP instruction\n");
+        } break;
+
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 0 ) {
@@ -176,18 +200,18 @@ int main(int argv, char argc[]) {
             I_Push* psh = (I_Push*)&in;
             int value = get_register(registers, psh->srcReg);
             push(&stack, value);
-            printf("PUSH instruction\n");
+            printf("PUSH: R%c -> (%d)\n", register_letter(psh->srcReg), value);
         } break;
         case I_PUSH_INT: {
             I_PushInt* psh = (I_PushInt*)&in;
             push(&stack, psh->value);
-            printf("PUSH_INT instruction\n");
+            printf("PUSH_INT: (%d)\n", psh->value);
         } break;
         case I_POP: {
             I_Pop* ipop = (I_Pop*)&in;
             int32_t val = pop(&stack);
             set_register(registers, ipop->reg, val);
-            printf("POP instruction\n");
+            printf("POP: R%c <- (%d)\n", register_letter(ipop->reg), val);
         } break;
         case I_CALL: {
             printf("CALL instruction\n");
@@ -254,6 +278,7 @@ void decrement_stack_pointer(Stack* stack, MemOffset decrement) {
     }
     stack->top -= decrement; 
 }
+
 
 void print_stack(Stack* stack) {
     Byte* p = (stack->base - stack->top); 
