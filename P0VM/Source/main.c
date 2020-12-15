@@ -69,14 +69,34 @@ int main(int argv, char argc[]) {
         case I_STORE: {
             printf("STORE instruction\n");
         } break;
-        case I_STORE_AT: {
-            printf("STORE_AT instruction\n");
-            I_StoreAt* store = (I_StoreAt*)&in; 
+        case I_STORE_HEAP_OFFSET: {
+            printf("STORE_HEAP_OFFSET instruction\n");
+            I_StoreHeap* store = (I_StoreHeap*)&in; 
             int val = get_register(registers, store->reg);
-            set_memory(pmemory, memory_size, store->dest_address, val);
+            set_memory(pmemory, memory_size, store->offset, val);
         } break;
-        case I_LOAD: {
-            printf("LOAD instruction\n");
+        case I_STORE_STACKFRAME_OFFSET: {
+            printf("STORE_STACKFRAME_OFFSET instruction\n");
+            I_StoreStack* store = (I_StoreStack*)&in;
+
+            MemOffset offset = store->offset;
+            int32_t val = get_register(registers, store->reg);
+
+            //TODO Create a function. Also implement for StackFrames
+            Byte* pval = stack.base - offset;
+            int32_t* pint = (int32_t*)pval;
+            *pint = val;
+        } break;
+        case I_LOAD_STACKFRAME_OFFSET: {
+            I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
+            int stack_offset = load->address;
+            //TODO implement StackFrames
+
+            Byte* pval = stack.base -  stack_offset;
+            int32_t value = (*(int32_t*)pval); 
+            set_register(registers, load->reg, value);
+
+            printf("LOAD_STACK_OFFSET instruction\n");
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
@@ -140,29 +160,35 @@ int main(int argv, char argc[]) {
         } break;
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
-            if (get_flag(registers, RFLAG_COMPARE) == 1 ) {
+            if (get_flag(registers, RFLAG_COMPARE) == 0 ) {
                 i = jmp->instruction_nr; 
             }
             printf("JMPEQ instruction\n");
         } break; 
         case I_JMPNEQ: {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
-            if (get_flag(registers, RFLAG_COMPARE) == 0) {
+            if (get_flag(registers, RFLAG_COMPARE) == 1) {
                 i = jmp->instruction_nr; 
             }
             printf("JMPNEQ instruction\n");
         } break;
         case I_PUSH: {
             I_Push* psh = (I_Push*)&in;
-            push(&stack, psh->value);
+            int value = get_register(registers, psh->srcReg);
+            push(&stack, value);
             printf("PUSH instruction\n");
+        } break;
+        case I_PUSH_INT: {
+            I_PushInt* psh = (I_PushInt*)&in;
+            push(&stack, psh->value);
+            printf("PUSH_INT instruction\n");
         } break;
         case I_POP: {
             I_Pop* ipop = (I_Pop*)&in;
             int32_t val = pop(&stack);
             set_register(registers, ipop->reg, val);
             printf("POP instruction\n");
-        }
+        } break;
         case I_CALL: {
             printf("CALL instruction\n");
         } break;
@@ -242,7 +268,7 @@ void generate_test_program_1() {
     I_LoadConst load1 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 666 };
     I_LoadConst load2 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 111 };
     I_Add add1 = { .opcode = I_ADD, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RC };
-    I_StoreAt store1 = { .opcode = I_STORE_AT, .reg = RC, .dest_address = 0 };
+    I_StoreHeap store1 = { .opcode = I_STORE_HEAP_OFFSET, .reg = RC, .offset = 0 };
 
     I_LoadConst load3 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 2 };
     I_LoadConst load4 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 5 };

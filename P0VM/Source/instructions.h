@@ -37,11 +37,11 @@ typedef struct instruction_t {
 typedef union load_instruction_t {
     Instruction _instruction;
     struct {
-        MemOffset address; //Memory address to load from
+        MemOffset address; //Memory address to load from, for I_LoadStackOffset -the offset, in bytes, from current *stack-frame base-pointer*
         Byte reg; //Target register
         Byte opcode;
     };
-} I_Load;
+} I_Load, I_LoadStackOffset; 
 
 typedef union load_const_instruction_t {
     Instruction _instruction;
@@ -55,11 +55,11 @@ typedef union load_const_instruction_t {
 typedef union store_instruction_t {
     Instruction _instruction;
     struct {
-        MemOffset dest_address; //Memory address to store to
+        MemOffset offset; //Memory address to store to
         Byte reg; // Source register
         Byte opcode;
     };
-} I_StoreAt;
+} I_StoreHeap,I_StoreStack; 
 
 
 typedef union binop_instruction_t {
@@ -98,11 +98,11 @@ typedef union jump_instruction_t {
 typedef union push_instruction_t {
     Instruction _instruction;
     struct {
-        int32_t value; //Keep 32-bit value in the lower 4 bytes. Makes sure that it is aligned
-        Byte padding_;
+        int32_t value; //Only used for PushInt, Keep 32-bit value in the lower 4 bytes. Makes sure that it is aligned
+        Byte srcReg; // Only used For Push
         Byte opcode; 
     };
-} I_Push;
+} I_Push, I_PushInt;
 
 
 
