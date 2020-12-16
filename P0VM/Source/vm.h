@@ -45,7 +45,9 @@ void push(Stack* stack, int32_t value);
 int32_t pop(Stack* stack);
 void increment_stack_pointer(Stack* stack, MemOffset increment);
 void decrement_stack_pointer(Stack* stack, MemOffset decrement);
-
+/*
+    Print stack, beginning with top element
+*/
 void print_stack(Stack* stack);
 
 
