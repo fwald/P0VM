@@ -17,6 +17,8 @@ enum instruction_opcodes {
     I_POP,
     I_ADD,
     I_SUB,
+    I_ADD_REG,
+    I_SUB_REG,
     I_DIV,
     I_MUL,
     I_INCR,
@@ -31,8 +33,11 @@ enum instruction_opcodes {
     I_JMPEQ,
     I_JMPNEQ,
     I_CALL,
+    I_ALLOC,
+    I_RETURN,
     I_PRINTLN,
     I_PRINTLN_INT,
+    I_STOP,
 };
 
 

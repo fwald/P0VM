@@ -24,8 +24,23 @@ void generate_test_program_2();
 void write_program_to_file();
 RetCode read_program_from_file(char* filename, _OUT_PARAM char** pmem, _OUT_PARAM size_t* program_size,_OUT_PARAM size_t* num_instructions );
 
-char register_letter(RegisterName rn) {
-    return 'A' + rn;
+char* register_namestr (RegisterName rn) {
+
+    switch (rn)
+    {
+    case RA: return "RA";
+    case RB: return "RB";
+    case RC: return "RC";
+    case RD: return "RD";
+    case RE: return "RE";
+    case RF: return "RF";
+    case RBP: return "RBP";
+    case RSP: return "RSP";
+    case RIP: return "RIP";
+    case RFLAGS: return "RFLAGS";
+    default: return "UNKOWN";
+    }
+
 }
 
 
@@ -34,7 +49,6 @@ int main(int argv, char argc[]) {
     printf("Initializing Punkt0 VM ...\n");
     Register registers[NUM_REGISTERS]; // General purpose registers
     clear_registers(registers);
-
 
     printf("Allocating memory... ");
     //Get memory 
@@ -49,7 +63,7 @@ int main(int argv, char argc[]) {
     
     printf("Loading program...");
     Instruction* instructions = NULL; 
-    size_t num_instructions = 0;
+    size_t num_instructions = 0; // Number of instructions of the main function
     size_t program_size = 0;
     char* string_storage = NULL;
 
@@ -66,7 +80,7 @@ int main(int argv, char argc[]) {
     instructions++; // First 6 bytes is header data 
     string_storage = pmemory + (num_instructions+1)*6;
 
-    Stack stack = { .base = pmemory + memory_size, .top =0 }; // Grow stack from high to low 
+    Stack stack = { .base = pmemory + memory_size }; 
     
     //Make sure that we align heap memory;
     size_t heap_start = program_size;
@@ -81,11 +95,18 @@ int main(int argv, char argc[]) {
  //   write_program_to_file();
     uint32_t i = 0;
 
-    int IP = 0 ; // Instruction offset 
-    while ( i < num_instructions) {
-        Instruction in = instructions[i];
+    int running = BOOL_TRUE;
+    while ( running ) {
+        int32_t current_instruction = get_register(registers, RIP);
+        if (current_instruction == num_instructions) {
+            break; // TODO: remove, once I use STOP instruction
+        }
+        assert((current_instruction) >= 0 && (current_instruction < num_instructions));
+        Instruction in = instructions[current_instruction];
         Byte opcode = in.bytes[5];
-        i++; 
+         
+        PRINT_INSTRUCTION(printf("[%d] ", current_instruction);)
+
 
         switch (opcode)
         {
@@ -93,13 +114,19 @@ int main(int argv, char argc[]) {
             printf("NOOP instruction\n");
         } break;
         case I_STORE: {
-            printf("STORE instruction\n");
+            I_Store* store = (I_Store*)&in; 
+            set_register(registers, store->dst_reg, get_register(registers, store->src_reg));
+            PRINT_INSTRUCTION(printf("STORE: %s <- %s  (%d)\n", 
+                register_namestr(store->dst_reg), 
+                register_namestr(store->src_reg), 
+                get_register(registers, store->src_reg) 
+            ) ;)
         } break;
         case I_STORE_HEAP_OFFSET: {
             printf("STORE_HEAP_OFFSET instruction\n");
             I_StoreHeap* store = (I_StoreHeap*)&in; 
-            int val = get_register(registers, store->reg);
-            set_memory(pmemory, memory_size, store->offset, val);
+            int val = get_register(registers, store->src_reg);
+            store_heap(&heap, get_register(registers, store->addr_reg), val);
         } break;
         case I_STORE_STACKFRAME_OFFSET: {
             I_StoreStack* store = (I_StoreStack*)&in;
@@ -111,7 +138,7 @@ int main(int argv, char argc[]) {
             Byte* pval = stack.base - offset;
             int32_t* pint = (int32_t*)pval;
             *pint = val;
-            PRINT_INSTRUCTION(printf("STORE_STACKFRAME_OFFSET: %c -> (%d)\n", register_letter(store->reg), val );)
+            PRINT_INSTRUCTION(printf("STORE_STACKFRAME_OFFSET: %s -> (%d)\n", register_namestr(store->reg), val );)
         } break;
         case I_LOAD_STACKFRAME_OFFSET: {
             I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
@@ -122,33 +149,51 @@ int main(int argv, char argc[]) {
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
 
-            PRINT_INSTRUCTION(printf("LOAD_STACK_OFFSET: R%c <- val:(%d), offset: %d\n", register_letter(load->reg), value, stack_offset );)
+            PRINT_INSTRUCTION(printf("LOAD_STACK_OFFSET: %s <- val:(%d), offset: %d\n", register_namestr(load->reg), value, stack_offset );)
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
             set_register(registers, load->reg, load->intlit);
-            printf("LOAD_CONST: R%c <- %d \n", register_letter(load->reg), load->intlit);
+            PRINT_INSTRUCTION(printf("LOAD_CONST: %s <- %d \n", register_namestr(load->reg), load->intlit);)
         } break;
         case I_ADD: {
             I_Add* add = (I_Add*)&in;
             int x = get_register(registers, add->reg_op_x);
             int y = get_register(registers, add->reg_op_y);
             set_register(registers, add->dest_reg, x + y );
-            printf("ADD: R%c <- %d + %d = %d \n", register_letter(add->dest_reg), x, y, x+y);
+            PRINT_INSTRUCTION(printf("ADD: %s <- %d + %d = %d \n", register_namestr(add->dest_reg), x, y, x+y);)
         } break;
+        case I_ADD_REG: {
+            I_AddReg* add = (I_AddReg*)&in;
+            int x = get_register(registers, add->intlit);
+            add_to_register(registers, add->reg, x);
+
+            PRINT_INSTRUCTION(printf("ADD_REG: %s <- + %d  \n", register_namestr(add->reg), x);)
+        } break;
+
+
         case I_SUB: {
             I_Sub* sub = (I_Sub*)&in;
             int x = get_register(registers, sub->reg_op_x);
             int y = get_register(registers, sub->reg_op_y);
             set_register(registers, sub->dest_reg, x - y );
-            printf("SUB: R%c <- %d - %d = %d \n", register_letter(sub->dest_reg), x, y, x-y);
+            PRINT_INSTRUCTION(printf("SUB: %s <- %d - %d = %d \n", register_namestr(sub->dest_reg), x, y, x-y);)
         } break;
+        
+        case I_SUB_REG: {
+            I_SubReg* sub = (I_SubReg*)&in;
+            int x = get_register(registers, sub->intlit);
+            add_to_register(registers, sub->reg, -x);
+
+            PRINT_INSTRUCTION(printf("SUB_REG: %s <- - %d  \n", register_namestr(sub->reg), x);)
+        } break;
+
         case I_DIV: {
             I_Div* div = (I_Div*)&in;
             int x = get_register(registers, div->reg_op_x);
             int y = get_register(registers, div->reg_op_y);
             set_register(registers, div->dest_reg, x / y );
-            printf("DIV: R%c <- %d / %d = %d \n", register_letter(div->dest_reg), x, y, x/y);
+            PRINT_INSTRUCTION( printf("DIV: %s <- %d / %d = %d \n", register_namestr(div->dest_reg), x, y, x/y);)
 
         } break;
         case I_MUL: {
@@ -156,38 +201,38 @@ int main(int argv, char argc[]) {
             int x = get_register(registers, mul->reg_op_x);
             int y = get_register(registers, mul->reg_op_y);
             set_register(registers, mul->dest_reg, x * y );
-            printf("MUL: R%c <- %d * %d = %d \n", register_letter(mul->dest_reg), x, y, x*y);
+            PRINT_INSTRUCTION(printf("MUL: %s <- %d * %d = %d \n", register_namestr(mul->dest_reg), x, y, x*y);)
         } break;
         case I_AND: {
             I_And* and = (I_And*)&in;
             int x = get_register(registers, and->reg_op_x);
             int y = get_register(registers, and->reg_op_y);
             set_register(registers, and->dest_reg, x && y );
-            printf("AND: R%c <- %d && %d = %d\n", register_letter(and->dest_reg),x,y,x&&y);
+            PRINT_INSTRUCTION( printf("AND: %s <- %d && %d = %d\n", register_namestr(and->dest_reg),x,y,x&&y);)
         } break;
         case I_OR: {
             I_Or* or = (I_Or*)&in;
             int x = get_register(registers, or->reg_op_x);
             int y = get_register(registers, or->reg_op_y);
             set_register(registers, or->dest_reg, x || y );
-            printf("OR: R%c <- %d || %d = %d \n",register_letter(or->dest_reg),x,y,x||y);
+            PRINT_INSTRUCTION(printf("OR: %s <- %d || %d = %d \n",register_namestr(or->dest_reg),x,y,x||y);)
         } break;
         case I_INCR: {
             I_Increment* incr  = (I_Increment*)& in;
             add_to_register(registers, incr->reg, 1);
-            printf("INCR: R%c\n", register_letter(incr->reg));
+            PRINT_INSTRUCTION(printf("INCR: %s\n", register_namestr(incr->reg));)
         } break;
         case I_DECR: {
             I_Decrement* incr  = (I_Decrement*)& in;
             add_to_register(registers, incr->reg, -1);
-            printf("DECR R%c\n", register_letter(incr->reg));
+            PRINT_INSTRUCTION(printf("DECR %s\n", register_namestr(incr->reg));)
         } break;
         case I_CMP_EQ: {
             I_CompareEquals* eq = (I_CompareEquals*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x == y));
-            printf("CMP_EQ \n");
+           PRINT_INSTRUCTION(printf("CMP_EQ \n");)
             print_register_flags(registers);
         } break;
         case I_CMP_LESS: {
@@ -196,48 +241,63 @@ int main(int argv, char argc[]) {
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x < y));
             
-            printf("CMP_LESS\n");
+            PRINT_INSTRUCTION(printf("CMP_LESS\n");)
             print_register_flags(registers);
         } break;
         case I_JMP: {
+            //TODO: Check that jump is legal
             I_Jump* jmp = (I_Jump*)&in;
-            i = jmp->instruction_nr; 
+            set_register(registers, RIP, jmp->instruction_nr);
+            //i = jmp->instruction_nr; 
             printf("JMP\n");
         } break;
-
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 0 ) {
-                i = jmp->instruction_nr; 
+                set_register(registers, RIP, jmp->instruction_nr);
+               // i = jmp->instruction_nr; 
             }
             printf("JMPEQ\n");
         } break; 
         case I_JMPNEQ: {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 1) {
-                i = jmp->instruction_nr; 
+                set_register(registers, RIP, jmp->instruction_nr);
+                //i = jmp->instruction_nr; 
             }
             printf("JMPNEQ\n");
         } break;
         case I_PUSH: {
             I_Push* psh = (I_Push*)&in;
             int value = get_register(registers, psh->srcReg);
-            push(&stack, value);
-            PRINT_INSTRUCTION(printf("PUSH: R%c -> (%d)\n", register_letter(psh->srcReg), value);)
+            push(&stack, registers, value);
+            PRINT_INSTRUCTION(printf("PUSH: %s -> (%d)\n", register_namestr(psh->srcReg), value);)
         } break;
         case I_PUSH_INT: {
             I_PushInt* psh = (I_PushInt*)&in;
-            push(&stack, psh->value);
+            push(&stack,registers, psh->value);
             PRINT_INSTRUCTION(printf("PUSH_INT: (%d)\n", psh->value);)
         } break;
         case I_POP: {
             I_Pop* ipop = (I_Pop*)&in;
-            int32_t val = pop(&stack);
+            int32_t val = pop(&stack, registers);
             set_register(registers, ipop->reg, val);
-            PRINT_INSTRUCTION(printf("POP: R%c <- (%d)\n", register_letter(ipop->reg), val);)
+            PRINT_INSTRUCTION(printf("POP: %s <- (%d)\n", register_namestr(ipop->reg), val);)
         } break;
         case I_CALL: {
-            printf("CALL instruction\n");
+            I_Call* icall = (I_Call*)&in;
+            int32_t entrypoint = get_register(registers, icall->reg);
+            
+            push(&stack, registers, current_instruction + 1); // Resume from this instruction later 
+            set_register(registers, RIP, entrypoint);
+            PRINT_INSTRUCTION(printf("CALL instruction: %d\n", entrypoint);)
+        } break;
+        case I_RETURN: {
+            //Pop stack frame
+            //Read IP from stack
+            int32_t next_instruction = pop(&stack, registers);
+            set_register(registers,RIP, next_instruction-1  ); //We need to subtract here, since we add at the end of the loop
+            PRINT_INSTRUCTION(printf("RETURN: instruction: %d\n", next_instruction  );)
         } break;
         case I_PRINTLN: {
             I_PrintLn* iprint = (I_PrintLn*)&in;
@@ -252,18 +312,32 @@ int main(int argv, char argc[]) {
             PRINT_INSTRUCTION(printf("PRINTLN_INT \n");)
             printf("%d\n",val);
         } break;
+        case I_STOP: {
+            PRINT_INSTRUCTION(printf("STOP");)
+            running = BOOL_FALSE;
+        }; break;
+
+        case I_ALLOC: {
+            I_Alloc* ialloc = (I_Alloc*)&in;
+            set_register(registers, ialloc->dstReg, heap_alloc(&heap, ialloc->size));
+            PRINT_INSTRUCTION(printf("ALLOC, size: %d bytes\n",ialloc->size );)
+        } break;
         default: {
             printf("UNKNOWN instruction\n");
         }   break;
         }
-         
+       
+        add_to_register(registers, RIP, 1);
+        //set_register(registers, RIP, current_instruction + 1);
     }
 
 #ifdef PRINT_DEBUG_INFO
     printf("\n");
     print_registers(registers) ;
-    print_stack(&stack);
-  //  print_int_at_memory_offset(pmemory, memory_size, 0);
+    print_stack(&stack, registers);
+    print_int_at_memory_offset(heap.base, memory_size, 0);
+    print_int_at_memory_offset(heap.base, memory_size, 4);
+    print_int_at_memory_offset(heap.base, memory_size, 8);
 #endif 
 
     free(pmemory);
@@ -280,42 +354,49 @@ int get_flag(Register* registers, RegisterFlagShifts shifts) {
     return ((registers[RFLAGS].store >> shifts) & 1); 
 }
 
-void push(Stack* stack, int32_t value) {
-    increment_stack_pointer(stack, (MemOffset)sizeof(value)); //make space
-    Byte* p = stack->base - stack->top; //Get pointer to top of stack, stack grows downwards, hence the '-' 
+void push(Stack* stack, Register* registers, int32_t value) {
+    increment_stack_pointer(stack, registers, (MemOffset)sizeof(value)); //make space
+    Byte* p = stack->base - get_register(registers, RSP); //Get pointer to top of stack, stack grows downwards, hence the '-' 
     int32_t* pint = (int32_t*)p; 
     (*pint) = value;
 }
 
-int32_t pop(Stack* stack) {
-    Byte* p = (stack->base - stack->top); 
+int32_t pop(Stack* stack, Register* registers) {
+    Byte* p = (stack->base - get_register(registers, RSP)); 
     int32_t val = (*(int32_t*)(p));
-    decrement_stack_pointer(stack, (MemOffset)sizeof(val) );
+    decrement_stack_pointer(stack,registers, (MemOffset)sizeof(val) );
     return val; 
 }
 
 
-void increment_stack_pointer(Stack* stack, MemOffset increment ) {
-    int64_t signed_offset = (int64_t)stack->top;
+void increment_stack_pointer(Stack* stack, Register* registers, MemOffset increment ) {
+    int32_t sp = get_register(registers, RSP);
+    
+    //This is just being overly defensive:
+    int64_t signed_offset = (int64_t)sp;
     if ( (signed_offset + increment) > 0xFFFFFFFFLL) {
         printf("Error, stack overflow! You have consumed the entire memory of the VM :( \n");
         assert(0); //For now, just shut down
     }
-    stack->top += increment;  
+
+    set_register(registers, RSP, sp + increment);
+    //stack->top += increment;  
 }
 
-void decrement_stack_pointer(Stack* stack, MemOffset decrement) {
-    int64_t signed_offset = (int64_t)stack->top;
+void decrement_stack_pointer(Stack* stack, Register* registers, MemOffset decrement) {
+    int32_t sp = get_register(registers, RSP);
+    
+    int64_t signed_offset = (int64_t)sp;
     if ((signed_offset - decrement) <0)  {
         printf("[FATAL-ERROR]: Stack underflow! Trying to pop more elements of the stack than it contains! Check your code-gen! \n");
         assert(0); // Crasch 
     }
-    stack->top -= decrement; 
+    set_register(registers, RSP, sp - decrement);
 }
 
 
-void print_stack(Stack* stack) {
-    Byte* p = (stack->base - stack->top); 
+void print_stack(Stack* stack, Register* registers) {
+    Byte* p = (stack->base - get_register(registers, RSP)); 
     printf("Printing stack\n");
     for (p; p < stack->base; p += sizeof(int32_t)) {
         printf("%d\n", (*(int32_t*)(p)));
@@ -376,7 +457,7 @@ void generate_test_program_2() {
 
 void print_registers(Register* r) {
     for (int i = 0; i < NUM_GENERAL_REGISTERS; i++) {
-        printf("R%c: [%d]\n", 'A'+i, r[i].store);
+        printf("%s: [%d]\n", register_namestr(i), r[i].store);
     }
 
     print_register_flags(r);
@@ -399,7 +480,7 @@ void print_register(Register* registers, RegisterName rn) {
 }
 
 void add_to_register(Register* registers, RegisterName rn, int val) {
-    assert(rn >= 0 && rn < NUM_GENERAL_REGISTERS); 
+    assert(rn >= 0 && rn < NUM_REGISTERS); 
     registers[rn].store += val; 
 }
 
@@ -409,21 +490,21 @@ void clear_registers(Register* r )  {
     }
 }
 
-
 void set_register(Register* registers, RegisterName r, int val) {
-    assert(r >= 0 && r < NUM_GENERAL_REGISTERS);
+    assert(r >= 0 && r < NUM_REGISTERS);
     registers[r].store = val; 
 }
 
 int get_register(Register* registers, RegisterName r) {
-    assert(r >= 0 && r < NUM_GENERAL_REGISTERS);
+    assert(r >= 0 && r < NUM_REGISTERS);
     return registers[r].store; 
 }
 
-void set_memory(Byte* membase, size_t memsize, MemOffset offset, int val) {
-    assert(offset + 4 < memsize); // We will store a 32-bit int 
-    int* mem = (int*)(membase + offset);
-    *mem = val; 
+void store_heap(Heap* heap,  MemOffset offset, int val) {
+    Byte* pmem = heap->base + offset;
+    int32_t* pval = (int32_t*)pmem;
+    *pval = val; 
+
 }
 
 void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset) {
@@ -432,6 +513,12 @@ void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset)
     printf("Value at memory offset %u is %d\n", offset, (*mem)); 
 }
 
+MemOffset heap_alloc(Heap* heap, uint32_t size) {
+    assert( ((uint64_t)(heap->free + size)) < 0xFFFFFFFFULL);
+    MemOffset offset = heap->free;
+    heap->free += size;
+    return offset; 
+}
 
 void write_program_to_file() {
     //FILE* file =  fopen("program.pvm", "wb");

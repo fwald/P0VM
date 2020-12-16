@@ -37,19 +37,21 @@ int get_flag(Register* registers, RegisterFlagShifts shifts);
 /*
 * Set the memory to val at offset bytes from membase 
 */
-void set_memory(Byte* membase, size_t memsize, MemOffset offset, int val);
+void store_heap( Heap* heap, MemOffset offset, int val);
+MemOffset heap_alloc(Heap* heap, uint32_t size);
+
 
 void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset);
 
 // Stack stuff
-void push(Stack* stack, int32_t value);
-int32_t pop(Stack* stack);
-void increment_stack_pointer(Stack* stack, MemOffset increment);
-void decrement_stack_pointer(Stack* stack, MemOffset decrement);
+void push(Stack* stack, Register* registers, int32_t value);
+int32_t pop(Stack* stack, Register* registers);
+void increment_stack_pointer(Stack* stack,Register* registers, MemOffset increment);
+void decrement_stack_pointer(Stack* stack,Register* registers, MemOffset decrement);
 /*
     Print stack, beginning with top element
 */
-void print_stack(Stack* stack);
+void print_stack(Stack* stack, Register* registers);
 
 
 

@@ -32,7 +32,7 @@ enum instruction_constants {
 
 typedef struct instruction_t {
     Byte bytes[INSTRUCTION_SIZE_BYTES];
-} Instruction ;
+} Instruction, I_Return, I_Stop ;
 
 typedef union load_instruction_t {
     Instruction _instruction;
@@ -50,16 +50,52 @@ typedef union load_const_instruction_t {
         Byte reg; //Target register
         Byte opcode;
     };
-}I_LoadConst;
+}I_LoadConst, I_AddReg, I_SubReg ;
 
-typedef union store_instruction_t {
+typedef union store_instructions_t {
     Instruction _instruction;
     struct {
         MemOffset offset; //Memory address to store to
         Byte reg; // Source register
         Byte opcode;
     };
-} I_StoreHeap,I_StoreStack; 
+} I_StoreStack;
+
+typedef union alloc_instruction_t {
+    Instruction _instruction;
+    struct {
+        MemOffset size; //Size, in bytes, of allocation
+        Byte dstReg; // Register where memory offset to beginning of allocation will be stored 
+        Byte opcode;
+    };
+} I_Alloc;
+
+
+
+typedef union src_dst_register_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte src_reg;
+        Byte dst_reg;
+        Byte opcode;
+    };
+} I_Store;
+
+typedef union store_heap_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte addr_reg;
+        Byte src_reg;
+        Byte opcode;
+    };
+} I_StoreHeap;
+
 
 
 typedef union binop_instruction_t {
@@ -84,7 +120,7 @@ typedef union single_reg_instruction_t {
         Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop, src register for PrintLn
         Byte opcode;
     };
-}I_Increment, I_Decrement, I_Pop, I_PrintLn, I_PrintLnInt; 
+}I_Increment, I_Decrement, I_Pop, I_PrintLn, I_PrintLnInt, I_Call; 
 
 
 typedef union jump_instruction_t {
