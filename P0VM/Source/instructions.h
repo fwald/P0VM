@@ -34,14 +34,14 @@ typedef struct instruction_t {
     Byte bytes[INSTRUCTION_SIZE_BYTES];
 } Instruction, I_Return, I_Stop ;
 
-typedef union load_instruction_t {
+typedef union load_stack_offset_instruction_t {
     Instruction _instruction;
     struct {
         MemOffset address; //Memory address to load from, for I_LoadStackOffset -the offset, in bytes, from current *stack-frame base-pointer*
         Byte reg; //Target register
         Byte opcode;
     };
-} I_Load, I_LoadStackOffset; 
+} I_LoadStackOffset; 
 
 typedef union load_const_instruction_t {
     Instruction _instruction;
@@ -94,7 +94,7 @@ typedef union store_heap_instruction_t {
         Byte src_reg;
         Byte opcode;
     };
-} I_StoreHeap;
+} I_StoreHeap, I_Load ;
 
 
 

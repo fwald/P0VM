@@ -39,6 +39,7 @@ int get_flag(Register* registers, RegisterFlagShifts shifts);
 */
 void store_heap( Heap* heap, MemOffset offset, int val);
 MemOffset heap_alloc(Heap* heap, uint32_t size);
+int32_t get_heap_value(Heap* heap, MemOffset offset);
 
 
 void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset);

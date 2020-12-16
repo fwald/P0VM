@@ -148,7 +148,6 @@ int main(int argv, char argc[]) {
             Byte* pval = stack.base -  stack_offset;
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
-
             PRINT_INSTRUCTION(printf("LOAD_STACK_OFFSET: %s <- val:(%d), offset: %d\n", register_namestr(load->reg), value, stack_offset );)
         } break;
         case I_LOAD_CONST: {
@@ -156,6 +155,14 @@ int main(int argv, char argc[]) {
             set_register(registers, load->reg, load->intlit);
             PRINT_INSTRUCTION(printf("LOAD_CONST: %s <- %d \n", register_namestr(load->reg), load->intlit);)
         } break;
+         case I_LOAD: {
+            I_Load* load = (I_Load*) &in; 
+            int32_t value = get_heap_value(&heap, get_register(registers, load->addr_reg));
+            set_register(registers, load->src_reg, value);
+            PRINT_INSTRUCTION(printf("LOAD: %s <- %d \n", register_namestr(load->src_reg), value );)
+        } break;
+
+
         case I_ADD: {
             I_Add* add = (I_Add*)&in;
             int x = get_register(registers, add->reg_op_x);
@@ -506,6 +513,14 @@ void store_heap(Heap* heap,  MemOffset offset, int val) {
     *pval = val; 
 
 }
+
+int32_t get_heap_value(Heap* heap, MemOffset offset) {
+    Byte* pmem = heap->base + offset;
+    int32_t* pval = (int32_t*)pmem;
+    return (*pval); 
+
+}
+
 
 void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset) {
     assert(offset+4 < memsize );
