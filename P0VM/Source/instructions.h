@@ -72,7 +72,7 @@ typedef union binop_instruction_t {
         Byte reg_op_x;
         Byte opcode;
     };
-}I_Binop, I_Add, I_Sub, I_Mul, I_Div, I_CompareEquals, I_CompareLess; 
+}I_Binop, I_Add, I_Sub, I_Mul, I_Div, I_CompareEquals, I_CompareLess, I_And, I_Or;
 
 typedef union single_reg_instruction_t {
     Instruction _instruction;
@@ -93,7 +93,7 @@ typedef union jump_instruction_t {
         Byte reg; 
         Byte opcode;
     };
-} I_JumpEquals, I_JumpNeq;
+} I_JumpEquals, I_JumpNeq, I_Jump;
 
 typedef union push_instruction_t {
     Instruction _instruction;
