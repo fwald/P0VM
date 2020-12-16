@@ -80,7 +80,6 @@ int main(int argv, char argc[]) {
             set_memory(pmemory, memory_size, store->offset, val);
         } break;
         case I_STORE_STACKFRAME_OFFSET: {
-            printf("STORE_STACKFRAME_OFFSET instruction\n");
             I_StoreStack* store = (I_StoreStack*)&in;
 
             MemOffset offset = store->offset;
@@ -90,6 +89,7 @@ int main(int argv, char argc[]) {
             Byte* pval = stack.base - offset;
             int32_t* pint = (int32_t*)pval;
             *pint = val;
+            printf("STORE_STACKFRAME_OFFSET: %c -> (%d)\n", register_letter(store->reg), val );
         } break;
         case I_LOAD_STACKFRAME_OFFSET: {
             I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
@@ -100,71 +100,72 @@ int main(int argv, char argc[]) {
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
 
-            printf("LOAD_STACK_OFFSET. R%c <- val:(%d)\n", register_letter(load->reg), value );
+            printf("LOAD_STACK_OFFSET: R%c <- val:(%d)\n", register_letter(load->reg), value );
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
             set_register(registers, load->reg, load->intlit);
-            printf("LOAD_CONST instruction\n");
+            printf("LOAD_CONST: R%c <- %d \n", register_letter(load->reg), load->intlit);
         } break;
         case I_ADD: {
             I_Add* add = (I_Add*)&in;
             int x = get_register(registers, add->reg_op_x);
             int y = get_register(registers, add->reg_op_y);
             set_register(registers, add->dest_reg, x + y );
-            printf("ADD instruction\n");
+            printf("ADD: R%c <- %d + %d = %d \n", register_letter(add->dest_reg), x, y, x+y);
         } break;
         case I_SUB: {
             I_Sub* sub = (I_Sub*)&in;
             int x = get_register(registers, sub->reg_op_x);
             int y = get_register(registers, sub->reg_op_y);
             set_register(registers, sub->dest_reg, x - y );
-            printf("SUB instruction\n");
+            printf("SUB: R%c <- %d - %d = %d \n", register_letter(sub->dest_reg), x, y, x-y);
         } break;
         case I_DIV: {
             I_Div* div = (I_Div*)&in;
             int x = get_register(registers, div->reg_op_x);
             int y = get_register(registers, div->reg_op_y);
             set_register(registers, div->dest_reg, x / y );
-            printf("DIV instruction\n");
+            printf("DIV: R%c <- %d / %d = %d \n", register_letter(div->dest_reg), x, y, x/y);
+
         } break;
         case I_MUL: {
             I_Mul* mul = (I_Mul*)&in;
             int x = get_register(registers, mul->reg_op_x);
             int y = get_register(registers, mul->reg_op_y);
             set_register(registers, mul->dest_reg, x * y );
-            printf("MUL instruction\n");
+            printf("MUL: R%c <- %d * %d = %d \n", register_letter(mul->dest_reg), x, y, x*y);
         } break;
         case I_AND: {
             I_And* and = (I_And*)&in;
             int x = get_register(registers, and->reg_op_x);
             int y = get_register(registers, and->reg_op_y);
             set_register(registers, and->dest_reg, x && y );
-            printf("AND: %d && %d == %d\n",x,y,x&&y);
+            printf("AND: R%c <- %d && %d = %d\n", register_letter(and->dest_reg),x,y,x&&y);
         } break;
         case I_OR: {
             I_Or* or = (I_Or*)&in;
             int x = get_register(registers, or->reg_op_x);
             int y = get_register(registers, or->reg_op_y);
             set_register(registers, or->dest_reg, x || y );
-            printf("OR: %d || %d == %d \n",x,y,x||y);
+            printf("OR: R%c <- %d || %d = %d \n",register_letter(or->dest_reg),x,y,x||y);
         } break;
         case I_INCR: {
             I_Increment* incr  = (I_Increment*)& in;
             add_to_register(registers, incr->reg, 1);
-            printf("INCR  instruction!\n");
+            printf("INCR: R%c\n", register_letter(incr->reg));
         } break;
         case I_DECR: {
             I_Decrement* incr  = (I_Decrement*)& in;
             add_to_register(registers, incr->reg, -1);
-            printf("DECR instruction!\n");
+            printf("DECR R%c\n", register_letter(incr->reg));
         } break;
         case I_CMP_EQ: {
             I_CompareEquals* eq = (I_CompareEquals*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x == y));
-            printf("CompareEquals instruction\n");
+            printf("CMP_EQ \n");
             print_register_flags(registers);
         } break;
         case I_CMP_LESS: {
@@ -173,13 +174,13 @@ int main(int argv, char argc[]) {
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x < y));
             
-            printf("CompareLess instruction\n");
+            printf("CMP_LESS\n");
             print_register_flags(registers);
         } break;
         case I_JMP: {
             I_Jump* jmp = (I_Jump*)&in;
             i = jmp->instruction_nr; 
-            printf("JMP instruction\n");
+            printf("JMP\n");
         } break;
 
         case I_JMPEQ: {
@@ -187,14 +188,14 @@ int main(int argv, char argc[]) {
             if (get_flag(registers, RFLAG_COMPARE) == 0 ) {
                 i = jmp->instruction_nr; 
             }
-            printf("JMPEQ instruction\n");
+            printf("JMPEQ\n");
         } break; 
         case I_JMPNEQ: {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 1) {
                 i = jmp->instruction_nr; 
             }
-            printf("JMPNEQ instruction\n");
+            printf("JMPNEQ\n");
         } break;
         case I_PUSH: {
             I_Push* psh = (I_Push*)&in;
