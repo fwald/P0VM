@@ -42,9 +42,11 @@ int main(int argv, char argc[]) {
 
     
     printf("Loading program...");
-    Instruction* instructions = NULL ; 
+    Instruction* instructions = NULL; 
     size_t num_instructions = 0;
     size_t program_size = 0;
+    char* string_storage = NULL;
+
 
     if (read_program_from_file(program_name, &pmemory, &program_size, &num_instructions )) {
         printf("    ...Done!\n");
@@ -53,9 +55,10 @@ int main(int argv, char argc[]) {
         printf("   ...Failed!\n");
         return -1; 
     }
+    
     instructions = (Instruction*) pmemory; 
     instructions++; // First 6 bytes is header data 
-
+    string_storage = pmemory + (num_instructions+1)*6;
 
     Stack stack = { .base = pmemory + memory_size, .top =0 }; // Grow stack from high to low 
     
@@ -231,7 +234,11 @@ int main(int argv, char argc[]) {
             printf("CALL instruction\n");
         } break;
         case I_PRINTLN: {
-            printf("PRINTLN instruction\n");
+            I_PrintLn* iprint = (I_PrintLn*)&in;
+            MemOffset offset = get_register(registers, iprint->reg);
+            char* s = pmemory + offset; 
+            printf("PRINTLN \n");
+            printf("%s\n",s);
         } break;
         default: {
             printf("UNKNOWN instruction\n");
@@ -432,15 +439,10 @@ RetCode read_program_from_file(char* filename, _OUT_PARAM char** pmem, _OUT_PARA
         filesize = ftell(file);
         fseek(file, 0L, SEEK_SET);
       
-        //g_test_program_size = filesize; 
-        //g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
-//        g_test_program = (Instruction*)malloc(filesize);
-
         RetCode ret = RETCODE_ERROR;
         fread(*pmem, sizeof(char), filesize, file);
 
         int32_t* n_instructions = (int32_t*)*pmem;
-       // g_test_program_len = *n_instructions; 
         (*program_size) = filesize;
         (*num_instructions) = *n_instructions;
 

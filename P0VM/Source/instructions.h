@@ -81,10 +81,11 @@ typedef union single_reg_instruction_t {
         Byte _pad1;
         Byte _pad2;
         Byte _pad3;
-        Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop
+        Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop, src register for PrintLn
         Byte opcode;
     };
-}I_Increment, I_Decrement, I_Pop; 
+}I_Increment, I_Decrement, I_Pop, I_PrintLn; 
+
 
 typedef union jump_instruction_t {
     Instruction _instruction;
