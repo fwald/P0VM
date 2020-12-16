@@ -5,6 +5,7 @@
 #include "vm_types.h"
 #include "instructions.h"
 
+#define _OUT_PARAM 
 
 
 typedef enum return_codes_t {

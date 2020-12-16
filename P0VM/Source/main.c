@@ -5,14 +5,17 @@
 #include <assert.h>
 #include <string.h>
 
-Instruction* g_test_program;
-size_t g_test_program_len = 0;
+
+
+char* program_name = "compiled_program.pvm";
+
+
 
 //Util functions
 void generate_test_program_1(); 
 void generate_test_program_2(); 
 void write_program_to_file();
-RetCode read_program_from_file(char* filename);
+RetCode read_program_from_file(char* filename, _OUT_PARAM char** pmem, _OUT_PARAM size_t* program_size,_OUT_PARAM size_t* num_instructions );
 
 char register_letter(RegisterName rn) {
     return 'A' + rn;
@@ -37,22 +40,31 @@ int main(int argv, char argc[]) {
     }
     printf("    ...Done!\n");
 
-    Stack stack = { 0 };
-    stack.base = pmemory + memory_size ;  // Grow stack from high to low 
-    Heap heap = { 0 };  // Grow heap from low to high
-    heap.base = pmemory; 
     
-    printf("Reading instructions...");
-    Instruction* instruction_stream = NULL ; 
+    printf("Loading program...");
+    Instruction* instructions = NULL ; 
     size_t num_instructions = 0;
-    int IP = 0 ; // Instruction offset 
-    if (read_program_from_file("compiled_program.pvm")) {
+    size_t program_size = 0;
+
+    if (read_program_from_file(program_name, &pmemory, &program_size, &num_instructions )) {
         printf("    ...Done!\n");
     }
     else {
         printf("   ...Failed!\n");
         return -1; 
     }
+    instructions = (Instruction*) pmemory; 
+    instructions++; // First 6 bytes is header data 
+
+
+    Stack stack = { .base = pmemory + memory_size, .top =0 }; // Grow stack from high to low 
+    
+    //Make sure that we align heap memory;
+    size_t heap_start = program_size;
+    if (heap_start % 2) {
+        heap_start++; 
+    }
+    Heap heap = { .base = pmemory + heap_start };  // Grow heap from low to high
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
     
@@ -60,8 +72,9 @@ int main(int argv, char argc[]) {
  //   write_program_to_file();
     uint32_t i = 0;
 
-    while ( i < g_test_program_len) {
-        Instruction in = g_test_program[i];
+    int IP = 0 ; // Instruction offset 
+    while ( i < num_instructions) {
+        Instruction in = instructions[i];
         Byte opcode = in.bytes[5];
         i++; 
 
@@ -100,7 +113,7 @@ int main(int argv, char argc[]) {
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
 
-            printf("LOAD_STACK_OFFSET: R%c <- val:(%d)\n", register_letter(load->reg), value );
+            printf("LOAD_STACK_OFFSET: R%c <- val:(%d), offset: %d\n", register_letter(load->reg), value, stack_offset );
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
@@ -230,7 +243,7 @@ int main(int argv, char argc[]) {
     printf("\n");
     print_registers(registers) ;
     print_stack(&stack);
-    print_int_at_memory_offset(pmemory, memory_size, 0);
+  //  print_int_at_memory_offset(pmemory, memory_size, 0);
 
 
     free(pmemory);
@@ -291,53 +304,53 @@ void print_stack(Stack* stack) {
 
 
 void generate_test_program_1() {
-    I_LoadConst load1 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 666 };
-    I_LoadConst load2 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 111 };
-    I_Add add1 = { .opcode = I_ADD, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RC };
-    I_StoreHeap store1 = { .opcode = I_STORE_HEAP_OFFSET, .reg = RC, .offset = 0 };
+    //I_LoadConst load1 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 666 };
+    //I_LoadConst load2 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 111 };
+    //I_Add add1 = { .opcode = I_ADD, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RC };
+    //I_StoreHeap store1 = { .opcode = I_STORE_HEAP_OFFSET, .reg = RC, .offset = 0 };
 
-    I_LoadConst load3 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 2 };
-    I_LoadConst load4 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 5 };
-    I_Sub sub1 = { .opcode = I_SUB, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RE };
-    I_Mul mul1 = { .opcode = I_MUL, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RF };
-    I_Div div1 = { .opcode = I_DIV, .reg_op_x = RF, .reg_op_y = RA, .dest_reg = RG };
+    //I_LoadConst load3 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 2 };
+    //I_LoadConst load4 = { .opcode = I_LOAD_CONST,  .reg = RB, .intlit = 5 };
+    //I_Sub sub1 = { .opcode = I_SUB, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RE };
+    //I_Mul mul1 = { .opcode = I_MUL, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RF };
+    //I_Div div1 = { .opcode = I_DIV, .reg_op_x = RF, .reg_op_y = RA, .dest_reg = RG };
 
-    I_CompareEquals cmpeq1 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RD };
-    I_CompareEquals cmpeq2 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RA, .dest_reg = RH };
+    //I_CompareEquals cmpeq1 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RB, .dest_reg = RD };
+    //I_CompareEquals cmpeq2 = { .opcode = I_CMP_EQ, .reg_op_x = RA, .reg_op_y = RA, .dest_reg = RH };
 
-    I_Increment incr1 = { .opcode = I_INCR, .reg = RH };
-    I_Decrement decr1 = { .opcode = I_DECR, .reg = RB };
+    //I_Increment incr1 = { .opcode = I_INCR, .reg = RH };
+    //I_Decrement decr1 = { .opcode = I_DECR, .reg = RB };
 
-    g_test_program[g_test_program_len++] = load1._instruction;
-    g_test_program[g_test_program_len++] = load2._instruction;
-    g_test_program[g_test_program_len++] = add1._instruction;
-    g_test_program[g_test_program_len++] = store1._instruction;
+    //g_test_program[g_test_program_len++] = load1._instruction;
+    //g_test_program[g_test_program_len++] = load2._instruction;
+    //g_test_program[g_test_program_len++] = add1._instruction;
+    //g_test_program[g_test_program_len++] = store1._instruction;
 
-    g_test_program[g_test_program_len++] = load3._instruction;
-    g_test_program[g_test_program_len++] = load4._instruction;
-    g_test_program[g_test_program_len++] = sub1._instruction;
-    g_test_program[g_test_program_len++] = mul1._instruction;
-    g_test_program[g_test_program_len++] = div1._instruction;
+    //g_test_program[g_test_program_len++] = load3._instruction;
+    //g_test_program[g_test_program_len++] = load4._instruction;
+    //g_test_program[g_test_program_len++] = sub1._instruction;
+    //g_test_program[g_test_program_len++] = mul1._instruction;
+    //g_test_program[g_test_program_len++] = div1._instruction;
 
-    g_test_program[g_test_program_len++] = cmpeq1._instruction;
-    g_test_program[g_test_program_len++] = cmpeq2._instruction;
+    //g_test_program[g_test_program_len++] = cmpeq1._instruction;
+    //g_test_program[g_test_program_len++] = cmpeq2._instruction;
 
-    g_test_program[g_test_program_len++] = incr1._instruction;
-    g_test_program[g_test_program_len++] = decr1._instruction;
+    //g_test_program[g_test_program_len++] = incr1._instruction;
+    //g_test_program[g_test_program_len++] = decr1._instruction;
 }
 
 void generate_test_program_2() {
-    I_LoadConst instr_0 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 10 };
-    I_Increment instr_1 = { .opcode = I_INCR, .reg = RB };
-    I_Decrement instr_2 = { .opcode = I_DECR, .reg = RA };
+    //I_LoadConst instr_0 = { .opcode = I_LOAD_CONST,  .reg = RA, .intlit = 10 };
+    //I_Increment instr_1 = { .opcode = I_INCR, .reg = RB };
+    //I_Decrement instr_2 = { .opcode = I_DECR, .reg = RA };
 
-    I_JumpEquals instr_3 = { .opcode = I_JMPNEQ, .reg = RA, .instruction_nr = 1 };
+    //I_JumpEquals instr_3 = { .opcode = I_JMPNEQ, .reg = RA, .instruction_nr = 1 };
 
-    
-    g_test_program[g_test_program_len++] = instr_0._instruction;
-    g_test_program[g_test_program_len++] = instr_1._instruction;
-    g_test_program[g_test_program_len++] = instr_2._instruction;
-    g_test_program[g_test_program_len++] = instr_3._instruction;
+    //
+    //g_test_program[g_test_program_len++] = instr_0._instruction;
+    //g_test_program[g_test_program_len++] = instr_1._instruction;
+    //g_test_program[g_test_program_len++] = instr_2._instruction;
+    //g_test_program[g_test_program_len++] = instr_3._instruction;
 }
 
 
@@ -401,37 +414,37 @@ void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset)
 
 
 void write_program_to_file() {
-    FILE* file =  fopen("program.pvm", "wb");
-    if (!file) {
-        printf("Could not open file for writing!\n");
-        return; 
-    }
+    //FILE* file =  fopen("program.pvm", "wb");
+    //if (!file) {
+    //    printf("Could not open file for writing!\n");
+    //    return; 
+    //}
 
-    fwrite(g_test_program, sizeof(Instruction), g_test_program_len, file);
-    fclose(file);
+    //fwrite(g_test_program, sizeof(Instruction), g_test_program_len, file);
+    //fclose(file);
 }
 
-RetCode read_program_from_file(char* filename ) {
+RetCode read_program_from_file(char* filename, _OUT_PARAM char** pmem, _OUT_PARAM size_t* program_size,_OUT_PARAM size_t* num_instructions  ) {
     FILE* file = fopen(filename , "rb");
     if (file) {
         size_t filesize = 0;
         fseek(file, 0L, SEEK_END);
         filesize = ftell(file);
         fseek(file, 0L, SEEK_SET);
-       
-        //TODO: Use internal memory instead of malloc, after we have implemented an allocator
-        g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
-        g_test_program = (Instruction*)malloc(filesize);
+      
+        //g_test_program_size = filesize; 
+        //g_test_program_len = filesize / INSTRUCTION_SIZE_BYTES;
+//        g_test_program = (Instruction*)malloc(filesize);
 
         RetCode ret = RETCODE_ERROR;
+        fread(*pmem, sizeof(char), filesize, file);
 
-        if (g_test_program) {
-            fread(g_test_program, sizeof(Instruction), g_test_program_len, file);
-            ret = RETCODE_OK;
-        }
-        else {
-            printf("Failed to alloacte memory for instructions!\n");
-        }
+        int32_t* n_instructions = (int32_t*)*pmem;
+       // g_test_program_len = *n_instructions; 
+        (*program_size) = filesize;
+        (*num_instructions) = *n_instructions;
+
+        ret = RETCODE_OK;
 
         fclose(file);
         return ret; 
