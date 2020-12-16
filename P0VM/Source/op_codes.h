@@ -32,6 +32,7 @@ enum instruction_opcodes {
     I_JMPNEQ,
     I_CALL,
     I_PRINTLN,
+    I_PRINTLN_INT,
 };
 
 

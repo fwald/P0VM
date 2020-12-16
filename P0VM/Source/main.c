@@ -5,7 +5,14 @@
 #include <assert.h>
 #include <string.h>
 
+#define PRINT_DEBUG_INFO 
 
+
+#ifdef PRINT_DEBUG_INFO 
+#define PRINT_INSTRUCTION(x) x
+#else
+#define PRINT_INSTRUCTION(x) 
+#endif 
 
 char* program_name = "compiled_program.pvm";
 
@@ -25,7 +32,6 @@ char register_letter(RegisterName rn) {
 int main(int argv, char argc[]) {
    
     printf("Initializing Punkt0 VM ...\n");
-   
     Register registers[NUM_REGISTERS]; // General purpose registers
     clear_registers(registers);
 
@@ -105,7 +111,7 @@ int main(int argv, char argc[]) {
             Byte* pval = stack.base - offset;
             int32_t* pint = (int32_t*)pval;
             *pint = val;
-            printf("STORE_STACKFRAME_OFFSET: %c -> (%d)\n", register_letter(store->reg), val );
+            PRINT_INSTRUCTION(printf("STORE_STACKFRAME_OFFSET: %c -> (%d)\n", register_letter(store->reg), val );)
         } break;
         case I_LOAD_STACKFRAME_OFFSET: {
             I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
@@ -116,7 +122,7 @@ int main(int argv, char argc[]) {
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
 
-            printf("LOAD_STACK_OFFSET: R%c <- val:(%d), offset: %d\n", register_letter(load->reg), value, stack_offset );
+            PRINT_INSTRUCTION(printf("LOAD_STACK_OFFSET: R%c <- val:(%d), offset: %d\n", register_letter(load->reg), value, stack_offset );)
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
@@ -217,18 +223,18 @@ int main(int argv, char argc[]) {
             I_Push* psh = (I_Push*)&in;
             int value = get_register(registers, psh->srcReg);
             push(&stack, value);
-            printf("PUSH: R%c -> (%d)\n", register_letter(psh->srcReg), value);
+            PRINT_INSTRUCTION(printf("PUSH: R%c -> (%d)\n", register_letter(psh->srcReg), value);)
         } break;
         case I_PUSH_INT: {
             I_PushInt* psh = (I_PushInt*)&in;
             push(&stack, psh->value);
-            printf("PUSH_INT: (%d)\n", psh->value);
+            PRINT_INSTRUCTION(printf("PUSH_INT: (%d)\n", psh->value);)
         } break;
         case I_POP: {
             I_Pop* ipop = (I_Pop*)&in;
             int32_t val = pop(&stack);
             set_register(registers, ipop->reg, val);
-            printf("POP: R%c <- (%d)\n", register_letter(ipop->reg), val);
+            PRINT_INSTRUCTION(printf("POP: R%c <- (%d)\n", register_letter(ipop->reg), val);)
         } break;
         case I_CALL: {
             printf("CALL instruction\n");
@@ -237,8 +243,14 @@ int main(int argv, char argc[]) {
             I_PrintLn* iprint = (I_PrintLn*)&in;
             MemOffset offset = get_register(registers, iprint->reg);
             char* s = pmemory + offset; 
-            printf("PRINTLN \n");
+            PRINT_INSTRUCTION(printf("PRINTLN \n");)
             printf("%s\n",s);
+        } break;
+        case I_PRINTLN_INT: {
+            I_PrintLnInt* iprint = (I_PrintLnInt*)&in;
+            int32_t val = get_register(registers, iprint->reg);
+            PRINT_INSTRUCTION(printf("PRINTLN_INT \n");)
+            printf("%d\n",val);
         } break;
         default: {
             printf("UNKNOWN instruction\n");
@@ -247,11 +259,12 @@ int main(int argv, char argc[]) {
          
     }
 
+#ifdef PRINT_DEBUG_INFO
     printf("\n");
     print_registers(registers) ;
     print_stack(&stack);
   //  print_int_at_memory_offset(pmemory, memory_size, 0);
-
+#endif 
 
     free(pmemory);
     printf("\nTerminating, good bye!\n");
