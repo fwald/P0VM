@@ -107,6 +107,7 @@ int main(int argv, char argc[]) {
          
         PRINT_INSTRUCTION(printf("[%d] ", current_instruction);)
 
+        add_to_register(registers, RIP, 1);
 
          switch (opcode)
         {
@@ -249,7 +250,7 @@ int main(int argv, char argc[]) {
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x == y));
-           PRINT_INSTRUCTION(printf("CMP_EQ \n");)
+           PRINT_INSTRUCTION(printf("CMP_EQ, %d == %d (%d) \n", x,y,x==y);)
             print_register_flags(registers);
         } break;
         case I_CMP_LESS: {
@@ -266,23 +267,29 @@ int main(int argv, char argc[]) {
             I_Jump* jmp = (I_Jump*)&in;
             set_register(registers, RIP, jmp->instruction_nr);
             //i = jmp->instruction_nr; 
-            printf("JMP\n");
+            PRINT_INSTRUCTION(printf("JMP: jumpt to [%d]\n", jmp->instruction_nr);)
         } break;
         case I_JMPEQ: {
             I_JumpEquals* jmp = (I_JumpEquals*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 0 ) {
                 set_register(registers, RIP, jmp->instruction_nr);
                // i = jmp->instruction_nr; 
+                PRINT_INSTRUCTION(printf("JMPEQ: jumpt to [%d]\n", jmp->instruction_nr);)
             }
-            printf("JMPEQ\n");
+            else {
+            PRINT_INSTRUCTION(printf("JMPEQ: no jump\n");)
+            }
         } break; 
         case I_JMPNEQ: {
             I_JumpNeq* jmp = (I_JumpNeq*)&in;
             if (get_flag(registers, RFLAG_COMPARE) == 1) {
                 set_register(registers, RIP, jmp->instruction_nr);
+                PRINT_INSTRUCTION(printf("JMPNEQ: jumpt to [%d]\n", jmp->instruction_nr);)
                 //i = jmp->instruction_nr; 
             }
-            printf("JMPNEQ\n");
+            else {
+            PRINT_INSTRUCTION(printf("JMPNEQ: no jump\n");)
+            }
         } break;
         case I_PUSH: {
             I_Push* psh = (I_Push*)&in;
@@ -305,15 +312,15 @@ int main(int argv, char argc[]) {
             I_Call* icall = (I_Call*)&in;
             int32_t entrypoint = get_register(registers, icall->reg);
             
-            push(&stack, registers, current_instruction + 1); // Resume from this instruction later 
-            set_register(registers, RIP, entrypoint);
+            push(&stack, registers, current_instruction+1 ); // Resume from this instruction later 
+            set_register(registers, RIP, entrypoint+1);
             PRINT_INSTRUCTION(printf("CALL: jump to: [%d], return to: [%d]\n", entrypoint, current_instruction+1 );)
         } break;
         case I_RETURN: {
             //Pop stack frame
             //Read IP from stack
             int32_t next_instruction = pop(&stack, registers);
-            set_register(registers,RIP, next_instruction-1  ); //We need to subtract here, since we add at the end of the loop
+            set_register(registers,RIP, next_instruction  ); 
             PRINT_INSTRUCTION(printf("RETURN: jump to: [%d]\n", next_instruction  );)
         } break;
         case I_PRINTLN: {
@@ -344,8 +351,6 @@ int main(int argv, char argc[]) {
         }   break;
         }
        
-        add_to_register(registers, RIP, 1);
-        //set_register(registers, RIP, current_instruction + 1);
     }
 
 #ifdef PRINT_DEBUG_INFO
