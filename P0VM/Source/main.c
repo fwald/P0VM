@@ -123,10 +123,10 @@ int main(int argv, char argc[]) {
             ) ;)
         } break;
         case I_STORE_HEAP_OFFSET: {
-            printf("STORE_HEAP_OFFSET instruction\n");
             I_StoreHeap* store = (I_StoreHeap*)&in; 
             int val = get_register(registers, store->src_reg);
             store_heap(&heap, get_register(registers, store->addr_reg), val);
+            PRINT_INSTRUCTION(printf("STORE_HEAP_OFFSET: offset: %d <- (%d)\n", get_register(registers, store->addr_reg), val );)
         } break;
         case I_STORE_STACKFRAME_OFFSET: {
             I_StoreStack* store = (I_StoreStack*)&in;
@@ -134,7 +134,6 @@ int main(int argv, char argc[]) {
             MemOffset offset = store->offset;
             int32_t val = get_register(registers, store->reg);
 
-            //TODO Create a function. Also implement for StackFrames
             Byte* pval = stack.base - offset;
             int32_t* pint = (int32_t*)pval;
             *pint = val;
@@ -143,12 +142,11 @@ int main(int argv, char argc[]) {
         case I_LOAD_STACKFRAME_OFFSET: {
             I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
             int stack_offset = load->address;
-            //TODO implement StackFrames
 
             Byte* pval = stack.base -  stack_offset;
             int32_t value = (*(int32_t*)pval); 
             set_register(registers, load->reg, value);
-            PRINT_INSTRUCTION(printf("LOAD_STACK_OFFSET: %s <- val:(%d), offset: %d\n", register_namestr(load->reg), value, stack_offset );)
+            PRINT_INSTRUCTION(printf("LOAD_STACKFRAME_OFFSET: %s <- val:(%d), offset: %d\n", register_namestr(load->reg), value, stack_offset );)
         } break;
         case I_LOAD_CONST: {
             I_LoadConst* load = (I_LoadConst*) &in; 
@@ -161,6 +159,19 @@ int main(int argv, char argc[]) {
             set_register(registers, load->src_reg, value);
             PRINT_INSTRUCTION(printf("LOAD: %s <- %d \n", register_namestr(load->src_reg), value );)
         } break;
+         case I_LOAD_STACKFRAME_OFFSET_FROM_REG: {
+            I_LoadStackFromReg* load = (I_LoadStackFromReg*) &in; 
+
+            MemOffset offset = get_register(registers, load->addr_reg);
+             
+            Byte* pmem = stack.base - offset;
+            int32_t value = *((int32_t*)(pmem));
+
+            set_register(registers, load->src_reg, value);
+
+
+            PRINT_INSTRUCTION(printf("LOAD_STACKFRAME_OFFSET_FROM_REG: %s <- %d \n", register_namestr(load->src_reg), value );)
+         } break;
 
 
         case I_ADD: {
@@ -178,7 +189,6 @@ int main(int argv, char argc[]) {
             PRINT_INSTRUCTION(printf("ADD_REG: %s <- + %d  \n", register_namestr(add->reg), x);)
         } break;
 
-
         case I_SUB: {
             I_Sub* sub = (I_Sub*)&in;
             int x = get_register(registers, sub->reg_op_x);
@@ -189,10 +199,10 @@ int main(int argv, char argc[]) {
         
         case I_SUB_REG: {
             I_SubReg* sub = (I_SubReg*)&in;
-            int x = get_register(registers, sub->intlit);
+            int x =  sub->intlit;
             add_to_register(registers, sub->reg, -x);
 
-            PRINT_INSTRUCTION(printf("SUB_REG: %s <- - %d  \n", register_namestr(sub->reg), x);)
+            PRINT_INSTRUCTION(printf("SUB_REG: %s <- -%d  \n", register_namestr(sub->reg), x);)
         } break;
 
         case I_DIV: {
@@ -297,14 +307,14 @@ int main(int argv, char argc[]) {
             
             push(&stack, registers, current_instruction + 1); // Resume from this instruction later 
             set_register(registers, RIP, entrypoint);
-            PRINT_INSTRUCTION(printf("CALL instruction: %d\n", entrypoint);)
+            PRINT_INSTRUCTION(printf("CALL: jump to: [%d], return to: [%d]\n", entrypoint, current_instruction+1 );)
         } break;
         case I_RETURN: {
             //Pop stack frame
             //Read IP from stack
             int32_t next_instruction = pop(&stack, registers);
             set_register(registers,RIP, next_instruction-1  ); //We need to subtract here, since we add at the end of the loop
-            PRINT_INSTRUCTION(printf("RETURN: instruction: %d\n", next_instruction  );)
+            PRINT_INSTRUCTION(printf("RETURN: jump to: [%d]\n", next_instruction  );)
         } break;
         case I_PRINTLN: {
             I_PrintLn* iprint = (I_PrintLn*)&in;

@@ -94,7 +94,8 @@ typedef union store_heap_instruction_t {
         Byte src_reg;
         Byte opcode;
     };
-} I_StoreHeap, I_Load ;
+} I_StoreHeap, I_Load, I_LoadStackFromReg;
+
 
 
 
