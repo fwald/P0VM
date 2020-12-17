@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define PRINT_DEBUG_INFO 
+//#define PRINT_DEBUG_INFO 
 
 
 #ifdef PRINT_DEBUG_INFO 
@@ -108,7 +108,7 @@ int main(int argv, char argc[]) {
         PRINT_INSTRUCTION(printf("[%d] ", current_instruction);)
 
 
-        switch (opcode)
+         switch (opcode)
         {
         case I_NOOP:  {
             printf("NOOP instruction\n");
@@ -183,7 +183,7 @@ int main(int argv, char argc[]) {
         } break;
         case I_ADD_REG: {
             I_AddReg* add = (I_AddReg*)&in;
-            int x = get_register(registers, add->intlit);
+            int x =add->intlit;
             add_to_register(registers, add->reg, x);
 
             PRINT_INSTRUCTION(printf("ADD_REG: %s <- + %d  \n", register_namestr(add->reg), x);)
@@ -392,7 +392,7 @@ void increment_stack_pointer(Stack* stack, Register* registers, MemOffset increm
     //This is just being overly defensive:
     int64_t signed_offset = (int64_t)sp;
     if ( (signed_offset + increment) > 0xFFFFFFFFLL) {
-        printf("Error, stack overflow! You have consumed the entire memory of the VM :( \n");
+        printf("[FATAL-ERROR]: Stack overflow! You have consumed the entire memory of the VM :( \n");
         assert(0); //For now, just shut down
     }
 
@@ -406,7 +406,7 @@ void decrement_stack_pointer(Stack* stack, Register* registers, MemOffset decrem
     int64_t signed_offset = (int64_t)sp;
     if ((signed_offset - decrement) <0)  {
         printf("[FATAL-ERROR]: Stack underflow! Trying to pop more elements of the stack than it contains! Check your code-gen! \n");
-        assert(0); // Crasch 
+        assert(0); // Crash 
     }
     set_register(registers, RSP, sp - decrement);
 }
@@ -518,6 +518,10 @@ int get_register(Register* registers, RegisterName r) {
 }
 
 void store_heap(Heap* heap,  MemOffset offset, int val) {
+    if ( offset  == NULL_CONSTANT) {
+        printf("[FATAL-ERROR] Null-pointer exception. Tried to store at NULL-address\n");
+        assert(0);
+    }
     Byte* pmem = heap->base + offset;
     int32_t* pval = (int32_t*)pmem;
     *pval = val; 
@@ -525,6 +529,10 @@ void store_heap(Heap* heap,  MemOffset offset, int val) {
 }
 
 int32_t get_heap_value(Heap* heap, MemOffset offset) {
+    if (offset  == NULL_CONSTANT) {
+        printf("[FATAL-ERROR] Null-pointer exception. Tried to load from NULL-address\n");
+        assert(0);
+    }
     Byte* pmem = heap->base + offset;
     int32_t* pval = (int32_t*)pmem;
     return (*pval); 

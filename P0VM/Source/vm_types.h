@@ -12,6 +12,9 @@ typedef uint32_t MemOffset;
     Constants
 */
 
+const MemOffset NULL_CONSTANT = 0xffffffff; 
+
+
 // General purpose registers
 typedef enum vm_registers {
     RA =0,
