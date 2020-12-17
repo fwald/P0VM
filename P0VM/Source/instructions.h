@@ -104,7 +104,7 @@ typedef union binop_instruction_t {
     struct {
         Byte _pad0;
         Byte _pad1;
-        Byte dest_reg; // Ignored for Compare instructions
+        Byte dest_reg; 
         Byte reg_op_y;
         Byte reg_op_x;
         Byte opcode;

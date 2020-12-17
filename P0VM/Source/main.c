@@ -249,18 +249,17 @@ int main(int argv, char argc[]) {
             I_CompareEquals* eq = (I_CompareEquals*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
+            set_register(registers, eq->dest_reg, x == y);
             set_flag(registers, RFLAG_COMPARE, (x == y));
            PRINT_INSTRUCTION(printf("CMP_EQ, %d == %d (%d) \n", x,y,x==y);)
-            print_register_flags(registers);
         } break;
         case I_CMP_LESS: {
             I_CompareLess* eq = (I_CompareLess*)&in;
             int x = get_register(registers, eq->reg_op_x);
             int y = get_register(registers, eq->reg_op_y);
             set_flag(registers, RFLAG_COMPARE, (x < y));
-            
-            PRINT_INSTRUCTION(printf("CMP_LESS\n");)
-            print_register_flags(registers);
+            set_register(registers, eq->dest_reg, x < y);
+           PRINT_INSTRUCTION(printf("CMP_LESS, %d < %d (%d) \n", x,y,x<y);)
         } break;
         case I_JMP: {
             //TODO: Check that jump is legal
@@ -312,8 +311,8 @@ int main(int argv, char argc[]) {
             I_Call* icall = (I_Call*)&in;
             int32_t entrypoint = get_register(registers, icall->reg);
             
-            push(&stack, registers, current_instruction+1 ); // Resume from this instruction later 
-            set_register(registers, RIP, entrypoint+1);
+            push(&stack, registers, current_instruction+1 ); // Resume from the next instruction,
+            set_register(registers, RIP, entrypoint+1); // don't ask... 
             PRINT_INSTRUCTION(printf("CALL: jump to: [%d], return to: [%d]\n", entrypoint, current_instruction+1 );)
         } break;
         case I_RETURN: {
