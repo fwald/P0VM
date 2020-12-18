@@ -35,6 +35,7 @@ enum instruction_opcodes {
     I_JMPEQ,
     I_JMPNEQ,
     I_CALL,
+    I_NULL_CHECK,
     I_ALLOC,
     I_RETURN,
     I_PRINTLN,
