@@ -9,6 +9,7 @@ enum instruction_opcodes {
     I_STORE,
     I_STORE_STACKFRAME_OFFSET,
     I_STORE_HEAP_OFFSET,
+    I_STORE_TO_STACK_OFFSET_FROM_REG,
     I_LOAD,
     I_LOAD_STACKFRAME_OFFSET_FROM_REG,
     I_LOAD_STACKFRAME_OFFSET,
@@ -40,6 +41,7 @@ enum instruction_opcodes {
     I_PRINTLN_INT,
     I_CONCAT_STR_STR,
     I_CONCAT_STR_INT,
+    I_CONCAT_INT_STR,
     I_STOP,
 };
 

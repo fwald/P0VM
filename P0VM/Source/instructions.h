@@ -96,6 +96,17 @@ typedef union store_heap_instruction_t {
     };
 } I_StoreHeap, I_Load, I_LoadStackFromReg;
 
+typedef union store_to_stack_offset_from_reg_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte value_reg;
+        Byte addr_reg;
+        Byte opcode;
+    };
+} I_StoreToStackOffsetFromReg;
 
 
 
@@ -148,12 +159,12 @@ typedef union concat_str_t {
     struct {
         Byte _pad0;
         Byte _pad1;
-        Byte dest_reg; 
-        Byte arg1_reg; // Could be a string ref or an int
-        Byte str_a_reg; // Always a string ref 
-        Byte opcode; 
+        Byte dest_reg;
+        Byte arg1_reg;
+        Byte arg0_reg;
+        Byte opcode;
     };
-} I_ConcatStrStr, I_ConcatStrInt;
+} I_ConcatStrStr, I_ConcatStrInt, I_ConcatIntStr;
 
 
 
