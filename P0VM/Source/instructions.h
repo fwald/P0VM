@@ -132,7 +132,7 @@ typedef union single_reg_instruction_t {
         Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop, src register for PrintLn
         Byte opcode;
     };
-}I_Increment, I_Decrement, I_Pop, I_PrintLn, I_PrintLnInt, I_Call; 
+}I_Increment, I_Decrement, I_Pop, I_PrintLn, I_PrintLnInt, I_Call, I_NullCheck;
 
 
 typedef union jump_instruction_t {

@@ -423,7 +423,16 @@ int main(int argv, char argc[]) {
             PRINT_INSTRUCTION(printf("CONCAT_INT_STR: %d + %s, new string stored at: %d", n, str_b,  concat_str_ref );)
         }break;
  
+         case I_NULL_CHECK: {
+             I_NullCheck* icheck = (I_NullCheck*)&in;
 
+             MemOffset val =(MemOffset) get_register(registers, icheck->reg); 
+             if (val == NULL_CONSTANT) {
+                 printf("[FATAL-ERROR] Attempting to dereference null-pointer\n");
+                 assert(0);
+             }
+             PRINT_INSTRUCTION(printf("NULL_CHECK\n");)
+         } break;
 
 
         default: {
