@@ -17,7 +17,6 @@
 char* program_name = "compiled_program.pvm";
 
 
-
 //Util functions
 void generate_test_program_1(); 
 void generate_test_program_2(); 
@@ -65,7 +64,6 @@ int main(int argv, char argc[]) {
     Instruction* instructions = NULL; 
     size_t num_instructions = 0; // Number of instructions of the main function
     size_t program_size = 0;
-    char* string_storage = NULL;
 
 
     if (read_program_from_file(program_name, &pmemory, &program_size, &num_instructions )) {
@@ -75,21 +73,17 @@ int main(int argv, char argc[]) {
         printf("   ...Failed!\n");
         return -1; 
     }
-    
+   
+
     instructions = (Instruction*) pmemory; 
     instructions++; // First 6 bytes is header data 
-    string_storage = pmemory + (num_instructions+1)*6;
-    size_t string_storage_size =  program_size - (num_instructions+1)*6;
+
+    char* storage = pmemory + (num_instructions+1)*6; // dispatch table + string storage
+    int storage_val = * (int*)storage; 
+    size_t storage_size =  program_size - (num_instructions+1)*6;
 
     Stack stack = { .base = pmemory + memory_size }; 
-
-    //Make sure that we align heap memory;
-    size_t heap_start = program_size;
-    if (heap_start % 2) {
-        heap_start++; 
-    }
-    //Heap heap = { .base = pmemory + heap_start };  // Grow heap from low to high
-    Heap heap = { .base = string_storage, .free = string_storage_size  };  // Grow heap from low to high
+    Heap heap = { .base = storage, .free = storage_size  };  // Grow heap from low to high
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
     
@@ -173,7 +167,7 @@ int main(int argv, char argc[]) {
             I_Load* load = (I_Load*) &in; 
             int32_t value = get_heap_value(&heap, get_register(registers, load->addr_reg));
             set_register(registers, load->src_reg, value);
-            PRINT_INSTRUCTION(printf("LOAD: %s <- %d \n", register_namestr(load->src_reg), value );)
+            PRINT_INSTRUCTION(printf("LOAD: %s <- %d, from heap-offset: \n", register_namestr(load->src_reg), value, get_register(registers,load->addr_reg) );)
         } break;
          case I_LOAD_STACKFRAME_OFFSET_FROM_REG: {
             I_LoadStackFromReg* load = (I_LoadStackFromReg*) &in; 
