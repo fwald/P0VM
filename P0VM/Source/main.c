@@ -79,15 +79,17 @@ int main(int argv, char argc[]) {
     instructions = (Instruction*) pmemory; 
     instructions++; // First 6 bytes is header data 
     string_storage = pmemory + (num_instructions+1)*6;
+    size_t string_storage_size =  program_size - (num_instructions+1)*6;
 
     Stack stack = { .base = pmemory + memory_size }; 
-    
+
     //Make sure that we align heap memory;
     size_t heap_start = program_size;
     if (heap_start % 2) {
         heap_start++; 
     }
-    Heap heap = { .base = pmemory + heap_start };  // Grow heap from low to high
+    //Heap heap = { .base = pmemory + heap_start };  // Grow heap from low to high
+    Heap heap = { .base = string_storage, .free = string_storage_size  };  // Grow heap from low to high
 
     printf("(Half-Life scientist): Everything... seems to be in order!\n\n");
     
@@ -325,7 +327,10 @@ int main(int argv, char argc[]) {
         case I_PRINTLN: {
             I_PrintLn* iprint = (I_PrintLn*)&in;
             MemOffset offset = get_register(registers, iprint->reg);
-            char* s = pmemory + offset; 
+            //char* s = pmemory + offset; 
+
+            char* s = heap.base + offset; 
+
             PRINT_INSTRUCTION(printf("PRINTLN \n");)
             printf("%s\n",s);
         } break;
@@ -345,6 +350,44 @@ int main(int argv, char argc[]) {
             set_register(registers, ialloc->dstReg, heap_alloc(&heap, ialloc->size));
             PRINT_INSTRUCTION(printf("ALLOC, size: %d bytes\n",ialloc->size );)
         } break;
+
+        case I_CONCAT_STR_STR: {
+            I_ConcatStrStr* istr = (I_ConcatStrStr*)&in;
+
+            char* str_a = heap.base + get_register(registers, istr->str_a_reg);
+            char* str_b = heap.base + get_register(registers, istr->arg1_reg);
+            size_t concat_size = strlen(str_a) + strlen(str_b);
+            MemOffset concat_str_ref = heap_alloc(&heap, concat_size + 1); // Extra byte for null-terminator
+
+            char* new_ref = strcpy(heap.base + concat_str_ref, str_a);
+            strcpy(new_ref + strlen(str_a), str_b);
+            set_register(registers, istr->dest_reg, concat_str_ref);
+
+            PRINT_INSTRUCTION(printf("CONCAT_STR_STR: %s + %s, new string stored at: %d",str_a, str_b, concat_str_ref  );)
+        }break;
+
+        case I_CONCAT_STR_INT: {
+            I_ConcatStrInt* istr = (I_ConcatStrInt*)&in;
+
+            char* str_a = heap.base + get_register(registers, istr->str_a_reg);
+            int32_t n  = get_register(registers, istr->arg1_reg);
+            
+            // Convert int into a string:
+            char temp_buf[12];
+            char* str_b = _itoa(n, temp_buf, 10);
+
+            // Now place on heap and concat strings
+            size_t concat_size = strlen(str_a) + strlen(str_b);
+            MemOffset concat_str_ref = heap_alloc(&heap, concat_size + 1); // Extra byte for null-terminator
+
+            char* new_ref = strcpy(heap.base + concat_str_ref, str_a);
+            strcpy(new_ref + strlen(str_a), str_b);
+
+            set_register(registers, istr->dest_reg, concat_str_ref);
+
+            PRINT_INSTRUCTION(printf("CONCAT_STR_INT: %s + %d, new string stored at: %d", str_a, n, concat_str_ref );)
+        }break;
+
         default: {
             printf("UNKNOWN instruction\n");
         }   break;
@@ -352,14 +395,6 @@ int main(int argv, char argc[]) {
        
     }
 
-#ifdef PRINT_DEBUG_INFO
-    printf("\n");
-    print_registers(registers) ;
-    print_stack(&stack, registers);
-    print_int_at_memory_offset(heap.base, memory_size, 0);
-    print_int_at_memory_offset(heap.base, memory_size, 4);
-    print_int_at_memory_offset(heap.base, memory_size, 8);
-#endif 
 
     free(pmemory);
     printf("\nTerminating, good bye!\n");

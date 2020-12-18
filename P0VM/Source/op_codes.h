@@ -38,6 +38,8 @@ enum instruction_opcodes {
     I_RETURN,
     I_PRINTLN,
     I_PRINTLN_INT,
+    I_CONCAT_STR_STR,
+    I_CONCAT_STR_INT,
     I_STOP,
 };
 

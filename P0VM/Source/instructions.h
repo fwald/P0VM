@@ -143,6 +143,19 @@ typedef union push_instruction_t {
 } I_Push, I_PushInt;
 
 
+typedef union concat_str_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte dest_reg; 
+        Byte arg1_reg; // Could be a string ref or an int
+        Byte str_a_reg; // Always a string ref 
+        Byte opcode; 
+    };
+} I_ConcatStrStr, I_ConcatStrInt;
+
+
 
 #endif // !P0VM_INSTRUCTIONS_H
 
