@@ -96,7 +96,7 @@ int main(int argv, char argc[]) {
             store_heap(&heap, get_register(registers, store->addr_reg), val);
             PRINT_INSTRUCTION(printf("STORE_HEAP_OFFSET: offset: %d <- (%d)\n", get_register(registers, store->addr_reg), val );)
         } break;
-        case I_STORE_STACKFRAME_OFFSET: {
+        case I_STORE_TO_STACK_OFFSET: {
             I_StoreStack* store = (I_StoreStack*)&in;
             MemOffset offset = store->offset;
             int32_t val = get_register(registers, store->reg);
@@ -114,7 +114,7 @@ int main(int argv, char argc[]) {
             *pint = value;
           PRINT_INSTRUCTION(printf("STORE_STACK_OFFSET_FROM_REG: %s -> (%d), offset: %d\n", register_namestr(store->value_reg), value, offset );)
         } break;
-        case I_LOAD_STACKFRAME_OFFSET: {
+        case I_LOAD_FROM_STACK_OFFSET: {
             I_LoadStackOffset* load = (I_LoadStackOffset*) &in; 
             int stack_offset = load->address;
             Byte* pval = stack.base -  stack_offset;
@@ -133,7 +133,7 @@ int main(int argv, char argc[]) {
             set_register(registers, load->src_reg, value);
             PRINT_INSTRUCTION(printf("LOAD: %s <- %d, from heap-offset: \n", register_namestr(load->src_reg), value, get_register(registers,load->addr_reg) );)
         } break;
-         case I_LOAD_STACKFRAME_OFFSET_FROM_REG: {
+         case I_LOAD_FROM_STACK_OFFSET_FROM_REG: {
             I_LoadStackFromReg* load = (I_LoadStackFromReg*) &in; 
             MemOffset offset = get_register(registers, load->addr_reg);
             Byte* pmem = stack.base - offset;

@@ -2,28 +2,14 @@
 #ifndef P0VM_INSTRUCTIONS_H
 #define P0VM_INSTRUCTIONS_H
 
-
 #include "vm_types.h"
 #include "op_codes.h"
 
-enum bool_values {
-    BOOL_FALSE = 0,
-    BOOL_TRUE = 1, 
-};
 
 enum instruction_constants {
     INSTRUCTION_SIZE_BYTES = 6,
 };
-   
-
-/*
-    I_STORE, // Mem[] <- Register
-    I_STORE_AT, // Store from register to the specified address 
-    I_LOAD, // Register <- Mem[]
-    I_JMPEQ, // Jumpt if value in register is == 0 
-    I_JMPNEQ, // Jumpt if value in register is != 0 
-*/
-
+  
 /*
 *   Most significant   --------->     Least significant
     Byte 5 | Byte 4 | Byte 3 | Byte 2 | Byte 1 | Byte 0 
@@ -37,13 +23,13 @@ typedef struct instruction_t {
 typedef union load_stack_offset_instruction_t {
     Instruction _instruction;
     struct {
-        MemOffset address; //Memory address to load from, for I_LoadStackOffset -the offset, in bytes, from current *stack-frame base-pointer*
+        MemOffset address; //The offset, in bytes, from stack base 
         Byte reg; //Target register
         Byte opcode;
     };
 } I_LoadStackOffset; 
 
-typedef union load_const_instruction_t {
+typedef union reg_intconst_instruction_t {
     Instruction _instruction;
     struct {
         int32_t intlit; //constant value   
@@ -61,6 +47,7 @@ typedef union store_instructions_t {
     };
 } I_StoreStack;
 
+//Allocates an object to the heap, stores the address to the object in a register
 typedef union alloc_instruction_t {
     Instruction _instruction;
     struct {
@@ -70,20 +57,21 @@ typedef union alloc_instruction_t {
     };
 } I_Alloc;
 
-
-
-typedef union src_dst_register_instruction_t {
+// Store the value from one register to the other
+typedef union store_instruction_t {
     Instruction _instruction;
     struct {
         Byte _pad0;
         Byte _pad1;
         Byte _pad2;
-        Byte src_reg;
-        Byte dst_reg;
+        Byte src_reg; // Contains the value 
+        Byte dst_reg; // Receives value 
         Byte opcode;
     };
 } I_Store;
 
+
+// Store value, from src_reg to the heap at memory address contained in addr_reg
 typedef union store_heap_instruction_t {
     Instruction _instruction;
     struct {
@@ -94,8 +82,38 @@ typedef union store_heap_instruction_t {
         Byte src_reg;
         Byte opcode;
     };
-} I_StoreHeap, I_Load, I_LoadStackFromReg;
+} I_StoreHeap;
 
+// Load value from heap, at address stored in addr_reg into src_reg
+typedef union load_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte addr_reg;
+        Byte src_reg;
+        Byte opcode;
+    };
+} I_Load;
+
+// Load value from stack, at offset from stack base stored in addr_reg into src_reg
+typedef union load_stack_from_reg_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte addr_reg;
+        Byte src_reg;
+        Byte opcode;
+    };
+} I_LoadStackFromReg;
+
+/* store a value in a register to the stack, using an offset that is stored in a register
+* addr_reg contains stack offset(from stack base) that the value will be stored in,
+*  val_reg  contains the value which will be stored to the stack
+*/
 typedef union store_to_stack_offset_from_reg_instruction_t {
     Instruction _instruction;
     struct {
@@ -108,8 +126,9 @@ typedef union store_to_stack_offset_from_reg_instruction_t {
     };
 } I_StoreToStackOffsetFromReg;
 
-
-
+// Binop instructions, reg_op_x contains the first argument, reg_op_y the second, the result is stored in dest_reg
+// CompareEquals and CompareLess also sets the COMPARE flag of the RFLAGS register
+// if the comparison results in true, COMPARE is set to 1 otherwise to 0
 typedef union binop_instruction_t {
     Instruction _instruction;
     struct {
@@ -122,6 +141,7 @@ typedef union binop_instruction_t {
     };
 }I_Binop, I_Add, I_Sub, I_Mul, I_Div, I_CompareEquals, I_CompareLess, I_And, I_Or;
 
+
 typedef union single_reg_instruction_t {
     Instruction _instruction;
     struct {
@@ -129,10 +149,53 @@ typedef union single_reg_instruction_t {
         Byte _pad1;
         Byte _pad2;
         Byte _pad3;
-        Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop, src register for PrintLn
+        Byte reg; // The register whose value will be incremented or decremented. Also destination register for Pop
         Byte opcode;
     };
-}I_Increment, I_Decrement, I_Pop, I_PrintLn, I_PrintLnInt, I_Call, I_NullCheck;
+}I_Increment, I_Decrement, I_Pop;
+
+
+typedef union printl_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte _pad3;
+        Byte reg; // For PRINTLN it contains the address to the string literal, for PRINTLN_INT it contains the int to be printed
+        Byte opcode;
+    };
+} I_PrintLn, I_PrintLnInt;
+
+
+
+// Pushes current instruction pointer to the stack, jumps to instruction address stored in reg
+typedef union call_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte _pad3;
+        Byte reg; // Contains the instruction address which will be jumped to 
+        Byte opcode;
+    };
+} I_Call;
+
+
+// Checks if the value stored in reg is equal to NULL_CONSTANT
+// If it is, the VM will crash
+typedef union null_check_instruction_t {
+    Instruction _instruction;
+    struct {
+        Byte _pad0;
+        Byte _pad1;
+        Byte _pad2;
+        Byte _pad3;
+        Byte reg; 
+        Byte opcode;
+    };
+} I_NullCheck;
 
 
 typedef union jump_instruction_t {
@@ -153,7 +216,8 @@ typedef union push_instruction_t {
     };
 } I_Push, I_PushInt;
 
-
+// Concatenation instruction. Concatenation order: arg0 arg1 
+// The resulting string is stored on the heap and the address to the string is returned in dest_reg
 typedef union concat_str_t {
     Instruction _instruction;
     struct {
