@@ -42,12 +42,12 @@ int main(int argv, char*  argc[]) {
 
     
     printf("Loading program: ");
-    char* program_name = "compiled_program.pvm";
+    char* program_name = "program.pvm";
     if (argv>1) {
         program_name = argc[1];
         printf("%s\n", argc[1]);
     }
-
+    
 
     Instruction* instructions = NULL; 
     size_t num_instructions = 0; // Number of instructions of the main function
