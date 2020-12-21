@@ -16,7 +16,6 @@
 #define PRINT_INSTRUCTION(x) 
 #endif 
 
-char* program_name = "compiled_program.pvm";
 
 /// Util functions
 RetCode read_program_from_file(char* filename, _OUT_PARAM char** pmem, _OUT_PARAM size_t* program_size,_OUT_PARAM size_t* num_instructions );
@@ -25,7 +24,7 @@ char* register_namestr(RegisterName rn);
 
 
 
-int main(int argv, char argc[]) {
+int main(int argv, char*  argc[]) {
    
     printf("Initializing Punkt0 VM ...\n");
     Register registers[NUM_REGISTERS]; // General purpose registers
@@ -42,7 +41,14 @@ int main(int argv, char argc[]) {
     printf("    ...Done!\n");
 
     
-    printf("Loading program...");
+    printf("Loading program: ");
+    char* program_name = "compiled_program.pvm";
+    if (argv>1) {
+        program_name = argc[1];
+        printf("%s\n", argc[1]);
+    }
+
+
     Instruction* instructions = NULL; 
     size_t num_instructions = 0; // Number of instructions of the main function
     size_t program_size = 0;
@@ -63,7 +69,7 @@ int main(int argv, char argc[]) {
     Stack stack = { .base = pmemory + memory_size }; 
     Heap heap = { .base = storage, .free = storage_size  };  // Grow heap from low to high
 
-    printf("(half life scientist) everything.. seems to be in order\n");
+    printf("(half life scientist) everything.. seems to be in order\n\n");
     
     int running = BOOL_TRUE;
     while ( running ) {
