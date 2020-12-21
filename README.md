@@ -1,5 +1,6 @@
-P0VM
-A 32-bit Virtual Machine for the P0VM Instruction Set
+# P0VM
+A 32-bit Virtual Machine for the P0VM Instruction Set.
+
 Compiler Construction Project 2020 fwaldner@kth.se
 
 See source-code and report for details
