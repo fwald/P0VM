@@ -10,3 +10,6 @@ Supply input program as command line argument:
 P0VM.exe program.pvm
 
 If no command line argument is given, the program default to look for a file called program.pvm
+
+## Test programs
+The folder Program contains test programs that can be executed by the VM
