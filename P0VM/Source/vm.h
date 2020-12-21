@@ -8,12 +8,6 @@
 #define _OUT_PARAM 
 
 
-typedef enum return_codes_t {
-    RETCODE_ERROR,
-    RETCODE_OK,
-} RetCode;
-
-
 void clear_registers(Register* registers);
 void print_registers(Register* registers);
 void print_register(Register* registers, RegisterName rn);
@@ -39,8 +33,11 @@ int get_flag(Register* registers, RegisterFlagShifts shifts);
 */
 void store_heap( Heap* heap, MemOffset offset, int val);
 MemOffset heap_alloc(Heap* heap, uint32_t size);
-int32_t get_heap_value(Heap* heap, MemOffset offset);
 
+/*
+* Get value from the heap at offset
+*/
+int32_t get_heap_value(Heap* heap, MemOffset offset);
 
 void print_int_at_memory_offset(Byte* membase, size_t memsize, MemOffset offset);
 
